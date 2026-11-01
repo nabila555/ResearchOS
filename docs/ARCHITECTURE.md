@@ -63,10 +63,9 @@ The frontend mirrors this: `services/` (API calls) → `hooks/` (TanStack Query)
 | Tests | Pytest, Vitest, Testing Library | free | ✔ |
 | Optional cloud AI | Claude API | paid, **opt-in only** | ✘ |
 
-> **PyMuPDF licence note:** PyMuPDF is AGPL-3.0. That is fine for a personal or
-> open-source (AGPL-compatible) project. If ResearchOS is ever distributed under a
-> permissive licence or commercially, swap in `pypdf` (BSD) behind the same
-> extractor interface.
+> **Licence note:** ResearchOS is released under AGPL-3.0, which matches PyMuPDF's
+> AGPL-3.0 licence. If a permissively licensed build is ever needed, swap in `pypdf` (BSD)
+> behind the same extractor interface.
 
 ## 3. Database schema (SQLite, SQLAlchemy 2)
 

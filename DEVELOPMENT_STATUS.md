@@ -72,9 +72,7 @@ passes.
   Typical papers take 1–2 s; very large scanned PDFs take longer.
 - **No browser end-to-end test suite** (for example Playwright) is included; UI flows were verified
   manually in the in-app browser each phase.
-- **No licence** has been chosen yet.
-- **Test data:** your library still contains the two fictional test papers and the analyses,
-  reports and review made while testing.
+- **Licence:** AGPL-3.0 (see `LICENSE`), compatible with PyMuPDF.
 
 ## Phase 5: Knowledge Management ✅
 
