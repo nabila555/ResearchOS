@@ -5,6 +5,7 @@ from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile,
 from fastapi.responses import FileResponse
 
 from app.api.deps import AppSettings, DbSession
+from app.api.routes.assistant import notify_indexer
 from app.document_processing.types import FileTooLargeError, InvalidFileError
 from app.models.library import DocumentType
 from app.schemas.library import (
@@ -97,18 +98,24 @@ def upload_document(
         doc = document_service.import_file(db, settings, temp_path, file.filename, attach)
     finally:
         temp_path.unlink(missing_ok=True)
+    notify_indexer(request)
     return document_service.to_detail(db, doc)
 
 
 @router.post("/url", response_model=DocumentDetail, status_code=status.HTTP_201_CREATED)
-def import_url(data: UrlImport, db: DbSession, settings: AppSettings) -> DocumentDetail:
+def import_url(
+    data: UrlImport, request: Request, db: DbSession, settings: AppSettings
+) -> DocumentDetail:
     doc = document_service.import_url(db, settings, data)
+    notify_indexer(request)
     return document_service.to_detail(db, doc)
 
 
 @router.post("/notes", response_model=DocumentDetail, status_code=status.HTTP_201_CREATED)
-def create_note(data: NoteCreate, db: DbSession) -> DocumentDetail:
-    return document_service.to_detail(db, document_service.create_note(db, data))
+def create_note(data: NoteCreate, request: Request, db: DbSession) -> DocumentDetail:
+    doc = document_service.create_note(db, data)
+    notify_indexer(request)
+    return document_service.to_detail(db, doc)
 
 
 @router.get("/{document_id}", response_model=DocumentDetail)
@@ -117,8 +124,11 @@ def get_document(document_id: int, db: DbSession) -> DocumentDetail:
 
 
 @router.patch("/{document_id}", response_model=DocumentDetail)
-def update_document(document_id: int, data: DocumentUpdate, db: DbSession) -> DocumentDetail:
+def update_document(
+    document_id: int, data: DocumentUpdate, request: Request, db: DbSession
+) -> DocumentDetail:
     doc = document_service.update_document(db, document_id, data)
+    notify_indexer(request)
     return document_service.to_detail(db, doc)
 
 

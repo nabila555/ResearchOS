@@ -11,6 +11,7 @@ import {
   Hash,
   Library,
   Link2,
+  MessageSquareText,
   NotebookPen,
   Plus,
   ScrollText,
@@ -207,6 +208,7 @@ function DashboardContent({
           <Card>
             <CardHeader title="Quick actions" />
             <CardBody className="space-y-1">
+              <QuickAction icon={MessageSquareText} label="Ask your library" href="/assistant" />
               <QuickAction icon={FileUp} label="Import documents" href="/library?import=upload" />
               <QuickAction icon={Link2} label="Import a web article" href="/library?import=url" />
               <QuickAction icon={NotebookPen} label="Write a research note" href="/library?import=note" />
@@ -365,7 +367,7 @@ function AiStatusCard() {
     if (!ollama.reachable) {
       tone = "warning";
       label = "Ollama not detected";
-      detail = "Install Ollama to enable the AI features planned for phase 3.";
+      detail = "Install and start Ollama to use the AI assistant.";
     } else if (!ollama.chat_model_available || !ollama.embed_model_available) {
       tone = "warning";
       label = "Models missing";

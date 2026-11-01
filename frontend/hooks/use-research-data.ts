@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  assistantService,
   collectionService,
   dashboardService,
   documentService,
@@ -114,4 +115,33 @@ export function useCollections() {
 export function useLibraryMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
   const invalidate = useInvalidateLibrary();
   return useMutation({ mutationFn: fn, onSuccess: invalidate });
+}
+
+// --- AI assistant ---------------------------------------------------------------
+
+export const assistantKeys = {
+  status: ["assistant-status"] as const,
+  sessions: ["chat-sessions"] as const,
+  session: (id: number) => ["chat-session", id] as const,
+};
+
+/** Polls while documents are being indexed so progress is visible. */
+export function useAssistantStatus() {
+  return useQuery({
+    queryKey: assistantKeys.status,
+    queryFn: assistantService.status,
+    refetchInterval: (query) => ((query.state.data?.index.pending ?? 0) > 0 ? 3000 : false),
+  });
+}
+
+export function useChatSessions() {
+  return useQuery({ queryKey: assistantKeys.sessions, queryFn: assistantService.sessions });
+}
+
+export function useChatSession(id: number | null) {
+  return useQuery({
+    queryKey: assistantKeys.session(id ?? 0),
+    queryFn: () => assistantService.session(id as number),
+    enabled: id !== null,
+  });
 }

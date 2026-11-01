@@ -3,7 +3,7 @@
 A local-first, open-source **research operating system**: collect, organise, analyse,
 and connect research material with AI that runs on your own machine and cites its sources.
 
-> **Status:** Phases 1 (Foundation) and 2 (Research Library) complete. See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+> **Status:** Phases 1–3 complete: foundation, research library, and the AI assistant. See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 > and the [roadmap](docs/ROADMAP.md). Sections not built yet are labelled with their
 > phase in the sidebar and explain what's planned; they contain no non-functional controls.
 
@@ -12,7 +12,9 @@ and connect research material with AI that runs on your own machine and cites it
 - **Research library:** import PDFs, Word, Markdown, text, web articles and notes;
   automatic metadata (verify-before-trust), collections, tags, filters, and full-text
   search with page-level snippets. Press **Ctrl/⌘ K** to search from anywhere.
-- **Honest AI:** answers cite document + page and say so when evidence is insufficient (Phase 3+).
+- **Honest AI assistant:** answers only from your sources, cites document and page for every
+  claim, checks each citation against the passages it was given, and says so when the evidence
+  is insufficient. Runs locally on Ollama; the Claude API is optional and needs your consent.
 
 ## Stack
 
@@ -54,15 +56,23 @@ npm run dev
 
 Open http://localhost:3000.
 
-### 3. Local AI (optional now, needed from Phase 3)
+### 3. Local AI (needed for the assistant)
 
 ```bash
 ollama pull llama3.1:8b
 ollama pull nomic-embed-text
 ```
 
-Settings → *AI providers* → **Re-check** confirms detection. On 8 GB RAM machines use a
-smaller model (e.g. `llama3.2:3b`) and set `OLLAMA_CHAT_MODEL` in `.env`.
+Install Ollama first (`winget install Ollama.Ollama` on Windows, or ollama.com/download).
+Settings → **Re-check** confirms detection. Documents are embedded automatically in the
+background; progress shows in Settings.
+
+On 8 GB RAM machines use a smaller model (e.g. `ollama pull llama3.2:3b`, then set
+`OLLAMA_CHAT_MODEL=llama3.2:3b` in `.env`). Expect 25–40 s per answer for 8B models on a CPU.
+
+**Optional: the Claude API.** Set `ANTHROPIC_API_KEY` in `.env`, restart the backend, then in
+Settings choose *Claude API* **and** tick the consent box. Only the question and the matched
+passages are sent; embeddings stay local.
 
 ### Configuration
 
@@ -108,7 +118,7 @@ researchos/
 │   │   ├── models/           # SQLAlchemy tables
 │   │   ├── schemas/          # Pydantic request/response models
 │   │   ├── services/         # business logic
-│   │   ├── ai/               # provider abstraction (Ollama, optional Claude)
+│   │   ├── ai/               # providers (Ollama, optional Claude), registry, vector index
 │   │   ├── document_processing/  # validation, storage, extraction, metadata, chunking, URL fetch
 │   │   └── research_analysis/    # comparison, gaps, detective (Phase 4)
 │   ├── migrations/           # Alembic migrations
@@ -137,6 +147,11 @@ researchos/
 | `'node' is not recognized` after installing Node | Open a new terminal so PATH refreshes. |
 | CORS error in browser console | Frontend runs on a different origin; add it to `CORS_ORIGINS` in `.env` and restart the backend. |
 | Settings shows **Ollama not detected** | Start the Ollama app (or `ollama serve`), then click *Re-check*. Custom host? Set `OLLAMA_BASE_URL`. |
+| Assistant says **“Ollama is not running”** | Start the Ollama app (system tray) or run `ollama serve`. |
+| Answers take a long time | Normal on a CPU (25–40 s for 8B). Use a smaller model, or raise `OLLAMA_GENERATION_TIMEOUT_SECONDS` if answers time out. |
+| Documents stay **“Indexing…”** | Ollama is down or `nomic-embed-text` isn't pulled; indexing resumes on its own once it's available. Check Settings → AI assistant. |
+| Assistant answers **“not enough evidence”** for something you imported | Check the document's *AI search* status is *Indexed*, widen the scope picker to “Whole library”, or rephrase with the paper's terminology. |
+| Cloud provider refused with **“Enable this explicitly in Settings”** | Tick the consent box under Settings → AI assistant (only after reading what is sent). |
 | Model shows **not installed** | `ollama pull <model>` with the exact name shown, or change `OLLAMA_CHAT_MODEL` / `OLLAMA_EMBED_MODEL`. |
 | Upload fails with **“does not look like a valid PDF”** | The file's contents don't match its extension (e.g. a renamed file). Re-export it as a real PDF. |
 | **“The PDF is password-protected”** | Remove the password in your PDF reader (Print → Save as PDF) and import again. |

@@ -28,7 +28,8 @@ explicitly enabled add-on and never a requirement.
        │                      │                    │
   data/database/        data/documents/      data/embeddings/
   researchos.db         original files       vector matrices
-  (SQLite, WAL)         (hash-named)         (numpy .npy)
+  (SQLite, WAL)         (hash-named)         (reserved; vectors
+                                             live in SQLite)
 ```
 
 ### Layering rules
@@ -95,12 +96,16 @@ Both use the `porter unicode61 remove_diacritics 2` tokenizer. Search queries ar
 rebuilt from plain terms (each quoted, last one prefix-matched), so user input can
 never inject FTS syntax.
 
+Implemented in Phase 3 (migration `0003`): `chunk_embeddings` (chunk_id + model → float32
+blob), `index_jobs` (durable embedding queue), `chat_sessions` (title, scope JSON),
+`chat_messages` (content, provider/model, status, `sources` sent, `cited` / `invalid_citations`,
+`grounded`, notes), `app_settings` (chat provider, cloud consent), and
+`documents.ai_index_status` / `ai_index_error`.
+
 Planned tables (added with Alembic migrations in their phase):
 
 | Phase | Table | Purpose |
 |---|---|---|
-| 3 | `chunk_embeddings` (chunk_id, model, dim, row_index) | Maps chunks to rows in the on-disk vector matrix; re-embeds when the model changes |
-| 3 | `chat_sessions`, `chat_messages`, `message_citations` | Assistant history with exact chunk/page citations |
 | 4 | `analyses` (type, input doc ids, structured JSON result, model, created_at) | Cached comparison / gap / detective results |
 | 5 | `concepts`, `document_concepts`, `relations` | Knowledge-graph nodes and typed edges with evidence chunk ids |
 | 5 | `review_themes`, `review_items` | Literature-review workspace |
@@ -142,10 +147,12 @@ class AIProvider(Protocol):
    be found stay empty and are shown as "not found", never guessed.
 4. **Chunk**: ~800–1,200 characters with ~150 overlap, split on paragraph/sentence
    boundaries, never across pages without recording `page_start`/`page_end`.
-5. **Embed**: batch through Ollama; store float32 vectors in
-   `data/embeddings/<model>.npy` plus the `chunk_embeddings` row map.
-6. **Retrieve**: hybrid score of cosine similarity (NumPy) and FTS5 BM25, optional
-   filter by collection/project/document, top-k with per-document diversity.
+5. **Embed** (background worker): batch through Ollama (`nomic-embed-text` with
+   `search_document:` / `search_query:` prefixes); store float32 vectors in `chunk_embeddings`.
+   The in-memory index reloads when the stored set changes (count + id checksum).
+6. **Retrieve**: cosine similarity (NumPy, minimum 0.45) and FTS5 BM25 (stop words removed),
+   merged with Reciprocal Rank Fusion; scope filter; max 3 passages per document; character budget.
+   If nothing matches, the model is not called.
 7. **Generate**: the prompt contains only numbered source passages; the model must
    cite `[n]` for each claim and answer "The provided sources do not contain enough
    evidence…" otherwise.

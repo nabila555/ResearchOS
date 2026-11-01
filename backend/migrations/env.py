@@ -14,12 +14,18 @@ from app.core.database import Base, create_db_engine
 target_metadata = Base.metadata
 
 
+def include_name(name: str | None, type_: str, _parent_names: object) -> bool:
+    # FTS5 virtual tables (and their shadow tables) are managed by hand in migrations.
+    return not (type_ == "table" and name is not None and "_fts" in name)
+
+
 def _run(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         render_as_batch=True,  # SQLite needs batch mode for ALTER TABLE
         compare_type=True,
+        include_name=include_name,
     )
     with context.begin_transaction():
         context.run_migrations()

@@ -114,3 +114,54 @@ export function toQueryString(params: object): string {
   const query = search.toString();
   return query ? `?${query}` : "";
 }
+
+/**
+ * POST JSON and read a newline-delimited JSON (NDJSON) response as it streams,
+ * calling `onEvent` for every complete line. HTTP errors before the stream
+ * starts (validation, missing consent) reject with an ApiError.
+ */
+export async function apiStreamNdjson<T>(
+  path: string,
+  body: unknown,
+  onEvent: (event: T) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) throw new ApiError("Request cancelled", 0);
+    throw error instanceof ApiError ? error : networkError();
+  }
+  if (!response.ok || !response.body) {
+    let errorBody: unknown;
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = undefined;
+    }
+    throw errorFromBody(response.status, errorBody);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    let newline = buffer.indexOf("\n");
+    while (newline !== -1) {
+      const line = buffer.slice(0, newline).trim();
+      buffer = buffer.slice(newline + 1);
+      if (line) onEvent(JSON.parse(line) as T);
+      newline = buffer.indexOf("\n");
+    }
+    if (done) break;
+  }
+  if (buffer.trim()) onEvent(JSON.parse(buffer) as T);
+}

@@ -15,5 +15,8 @@ beautifulsoup4>=4.12
 lxml>=5.2
 markdown-it-py>=3.0
 
-# Vector math for local retrieval (used from Phase 3)
+# Vector math for local retrieval
 numpy>=2.0
+
+# Optional cloud provider (only used if you set ANTHROPIC_API_KEY and give consent in Settings)
+anthropic>=2.0

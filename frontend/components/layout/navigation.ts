@@ -23,7 +23,7 @@ export interface NavItem {
 }
 
 /** The phase whose features are fully implemented. */
-export const CURRENT_PHASE = 2;
+export const CURRENT_PHASE = 3;
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -48,11 +48,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: MessageSquareText,
     phase: 3,
     summary: "Ask questions answered only from your own sources, with page-level citations.",
-    planned: [
-      "Local models through Ollama; optional Claude API with explicit consent",
-      "Local embeddings and vector search over page-aware chunks",
-      "Every answer cites document and page; says so when evidence is insufficient",
-    ],
+    planned: [],
   },
   {
     href: "/gaps",

@@ -12,6 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
+from app.ai.registry import AIServices, build_ai_services
+from app.ai.vector_index import VectorIndex
 from app.api import api_router
 from app.core.config import Settings, get_settings
 from app.core.database import create_db_engine, create_session_factory
@@ -24,7 +26,9 @@ from app.document_processing.types import (
     UnsupportedFileTypeError,
 )
 from app.document_processing.web import FetchError, UnsafeUrlError
+from app.services import indexing_service
 from app.services.errors import ServiceError
+from app.services.indexing_service import IndexWorker
 
 logger = logging.getLogger("researchos")
 
@@ -49,7 +53,7 @@ def _register_error_handlers(app: FastAPI) -> None:
         return JSONResponse({"detail": str(exc)}, status_code=code)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, ai: AIServices | None = None) -> FastAPI:
     settings = settings or get_settings()
     logging.basicConfig(level=settings.log_level.upper())
 
@@ -60,10 +64,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         run_migrations(engine)
         app.state.engine = engine
         app.state.session_factory = create_session_factory(engine)
+        app.state.ai = ai or build_ai_services(settings)
+        app.state.vector_index = VectorIndex()
+        app.state.index_worker = None
+        if settings.run_background_worker:
+            with app.state.session_factory() as db:
+                # Documents imported before the AI index existed are queued once.
+                indexing_service.enqueue_unindexed(db, include_failed=False)
+                db.commit()
+            worker = IndexWorker(app.state.session_factory, app.state.ai, settings.embed_batch_size)
+            worker.start()
+            app.state.index_worker = worker
         logger.info("ResearchOS %s started (data dir: %s)", __version__, settings.data_dir)
         try:
             yield
         finally:
+            if app.state.index_worker is not None:
+                app.state.index_worker.stop()
             engine.dispose()
 
     app = FastAPI(

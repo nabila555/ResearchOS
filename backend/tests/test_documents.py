@@ -94,7 +94,9 @@ def test_upload_rejects_unsupported_and_spoofed_files(client: TestClient, tmp_pa
 def test_upload_enforces_size_limit(tmp_path: Path) -> None:
     from app.main import create_app
 
-    settings = Settings(_env_file=None, data_dir=tmp_path / "data", max_upload_mb=1)
+    settings = Settings(
+        _env_file=None, data_dir=tmp_path / "data", max_upload_mb=1, run_background_worker=False
+    )
     big = tmp_path / "big.txt"
     big.write_bytes(b"a" * (1024 * 1024 + 10))
     with TestClient(create_app(settings)) as small_client:

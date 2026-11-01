@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { AssistantSettingsCard } from "@/components/settings/assistant-settings-card";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { useSystemStatus } from "@/hooks/use-research-data";
 import { API_BASE_URL } from "@/lib/api";
@@ -46,6 +47,7 @@ export function SettingsView() {
         ) : (
           <>
             <AiProviderCard data={status.data} />
+            <AssistantSettingsCard />
             <StorageCard data={status.data} />
           </>
         )}
@@ -91,8 +93,8 @@ function AiProviderCard({ data }: { data: SystemStatus }) {
   return (
     <Card>
       <CardHeader
-        title="AI providers"
-        description="AI features (phase 3+) run locally through Ollama by default. Nothing is sent to a cloud service unless you configure and enable it."
+        title="Local AI (Ollama)"
+        description="AI runs locally through Ollama by default. Nothing is sent to a cloud service unless you configure it and give consent below."
         action={<Badge tone="accent">Active: {active_provider}</Badge>}
       />
       <CardBody>

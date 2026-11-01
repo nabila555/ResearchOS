@@ -71,6 +71,11 @@ class Document(TimestampMixin, Base):
         Enum(DocumentStatus, native_enum=False, length=20), default=DocumentStatus.PENDING
     )
     error_message: Mapped[str | None] = mapped_column(Text)
+    # Embedding index for the AI assistant (see app.models.ai.IndexStatus).
+    ai_index_status: Mapped[str] = mapped_column(
+        String(20), default="none", server_default="none", index=True
+    )
+    ai_index_error: Mapped[str | None] = mapped_column(Text)
 
     # Source -------------------------------------------------------------------
     source_url: Mapped[str | None] = mapped_column(String(2000))

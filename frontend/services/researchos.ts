@@ -1,6 +1,11 @@
-import { API_BASE_URL, apiFetch, apiUpload, toQueryString } from "@/lib/api";
+import { API_BASE_URL, apiFetch, apiStreamNdjson, apiUpload, toQueryString } from "@/lib/api";
 import type {
+  AskEvent,
+  AssistantStatus,
   AttachmentOptions,
+  ChatScope,
+  ChatSession,
+  ChatSessionDetail,
   ChunkPage,
   Collection,
   DashboardSummary,
@@ -87,4 +92,32 @@ export const collectionService = {
 export const tagService = {
   list: () => apiFetch<Tag[]>("/api/tags"),
   remove: (id: number) => apiFetch<void>(`/api/tags/${id}`, { method: "DELETE" }),
+};
+
+export const assistantService = {
+  status: () => apiFetch<AssistantStatus>("/api/assistant/status"),
+  updateSettings: (input: { chat_provider?: string; cloud_consent?: boolean }) =>
+    apiFetch<AssistantStatus>("/api/assistant/settings", json("PUT", input)),
+  reindex: (documentIds: number[] = []) =>
+    apiFetch<{ queued: number }>("/api/assistant/reindex", json("POST", { document_ids: documentIds })),
+  sessions: () => apiFetch<ChatSession[]>("/api/assistant/sessions"),
+  session: (id: number) => apiFetch<ChatSessionDetail>(`/api/assistant/sessions/${id}`),
+  createSession: (scope?: ChatScope) =>
+    apiFetch<ChatSession>("/api/assistant/sessions", json("POST", { scope })),
+  renameSession: (id: number, title: string) =>
+    apiFetch<ChatSession>(`/api/assistant/sessions/${id}`, json("PATCH", { title })),
+  deleteSession: (id: number) => apiFetch<void>(`/api/assistant/sessions/${id}`, { method: "DELETE" }),
+  ask: (
+    sessionId: number,
+    content: string,
+    scope: ChatScope | undefined,
+    onEvent: (event: AskEvent) => void,
+    signal?: AbortSignal,
+  ) =>
+    apiStreamNdjson<AskEvent>(
+      `/api/assistant/sessions/${sessionId}/messages`,
+      { content, scope },
+      onEvent,
+      signal,
+    ),
 };

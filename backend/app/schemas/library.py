@@ -36,6 +36,7 @@ class DocumentSummary(BaseModel):
     page_count: int | None
     tags: list[TagRef]
     has_file: bool
+    ai_index_status: str
     source_url: str | None
     created_at: datetime
     # Present only for search results.
@@ -58,6 +59,7 @@ class DocumentDetail(DocumentSummary):
     projects: list[ProjectRef]
     metadata_sources: dict[str, str]
     warnings: list[str]
+    ai_index_error: str | None
     error_message: str | None
     updated_at: datetime
 

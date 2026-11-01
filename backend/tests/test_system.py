@@ -38,6 +38,7 @@ def test_system_status_never_returns_api_key(tmp_path) -> None:  # type: ignore[
         anthropic_api_key=secret,
         ollama_base_url="http://127.0.0.1:9",
         ollama_timeout_seconds=0.5,
+        run_background_worker=False,
     )
     with TestClient(create_app(settings)) as client:
         response = client.get("/api/system/status")

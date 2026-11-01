@@ -113,6 +113,7 @@ export interface DocumentSummary {
   page_count: number | null;
   tags: Ref[];
   has_file: boolean;
+  ai_index_status: IndexStatus;
   source_url: string | null;
   created_at: string;
   /** Search results only. Highlights are delimited by \u0002 … \u0003. */
@@ -147,6 +148,7 @@ export interface DocumentDetail extends DocumentSummary {
   projects: Ref[];
   metadata_sources: Partial<Record<string, MetadataSource>>;
   warnings: string[];
+  ai_index_error: string | null;
   error_message: string | null;
   updated_at: string;
 }
@@ -231,4 +233,92 @@ export interface LibraryFacets {
   authors: FacetCount[];
   tags: Tag[];
   collections: Collection[];
+}
+
+// --- AI assistant ---------------------------------------------------------------
+
+export type IndexStatus = "none" | "pending" | "ready" | "failed";
+
+export interface ChatScope {
+  collection_id?: number;
+  project_id?: number;
+  document_ids?: number[];
+}
+
+export interface SourcePassage {
+  n: number;
+  chunk_id: number;
+  document_id: number;
+  title: string;
+  authors: string[];
+  year: number | null;
+  page_start: number | null;
+  page_end: number | null;
+  section: string | null;
+  text: string;
+  score: number;
+  semantic_similarity: number | null;
+}
+
+export type ChatMessageStatus = "complete" | "error" | "refused" | "insufficient_evidence";
+
+export interface ChatMessage {
+  id: number;
+  session_id: number;
+  role: "user" | "assistant";
+  content: string;
+  provider: string | null;
+  model: string | null;
+  status: ChatMessageStatus | null;
+  grounded: boolean;
+  sources: SourcePassage[];
+  cited: number[];
+  invalid_citations: number[];
+  notes: string[];
+  created_at: string;
+}
+
+export interface ChatSession {
+  id: number;
+  title: string;
+  scope: ChatScope;
+  message_count: number;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatSessionDetail extends ChatSession {
+  messages: ChatMessage[];
+}
+
+export type AskEvent =
+  | { type: "user_message"; message: ChatMessage }
+  | { type: "sources"; sources: SourcePassage[]; semantic: boolean; notes: string[] }
+  | { type: "delta"; text: string }
+  | { type: "done"; message: ChatMessage }
+  | { type: "error"; message: string; chat_message?: ChatMessage };
+
+export interface ProviderInfo {
+  name: string;
+  label: string;
+  model: string;
+  cloud: boolean;
+}
+
+export interface AssistantStatus {
+  chat_provider: string;
+  providers: ProviderInfo[];
+  cloud_consent: boolean;
+  embed_model: string;
+  index: {
+    documents_total: number;
+    ready: number;
+    pending: number;
+    failed: number;
+    not_indexed: number;
+    chunks_total: number;
+    chunks_embedded: number;
+    waiting_for_provider: boolean;
+  };
 }

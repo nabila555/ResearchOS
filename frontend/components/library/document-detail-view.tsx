@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -34,7 +34,7 @@ import {
 } from "@/hooks/use-research-data";
 import { ApiError } from "@/lib/api";
 import { formatRelativeTime, pluralize } from "@/lib/utils";
-import { documentService } from "@/services/researchos";
+import { assistantService, documentService } from "@/services/researchos";
 import type { DocumentDetail, Ref } from "@/types/api";
 
 const FIELD_LABELS: Record<string, string> = {
@@ -190,6 +190,9 @@ function DocumentDetailContent({ doc }: { doc: DocumentDetail }) {
                 {doc.original_filename ? <DetailRow label="File">{doc.original_filename}</DetailRow> : null}
                 {doc.file_size !== null ? <DetailRow label="Size">{formatBytes(doc.file_size)}</DetailRow> : null}
                 <DetailRow label="Indexed passages">{doc.chunk_count}</DetailRow>
+                <DetailRow label="AI search">
+                  <AiIndexStatus doc={doc} />
+                </DetailRow>
                 <DetailRow label="Updated">{formatRelativeTime(doc.updated_at)}</DetailRow>
               </dl>
             </CardBody>
@@ -305,8 +308,10 @@ const CHUNKS_PER_PAGE = 20;
 
 function ExtractedText({ doc }: { doc: DocumentDetail }) {
   const [offset, setOffset] = useState(0);
-  const [pageDraft, setPageDraft] = useState("");
-  const [page, setPage] = useState<number | undefined>();
+  // Citations link here with ?page=N to open the passage's page directly.
+  const initialPage = Number(useSearchParams().get("page")) || undefined;
+  const [pageDraft, setPageDraft] = useState(initialPage ? String(initialPage) : "");
+  const [page, setPage] = useState<number | undefined>(initialPage);
   const chunks = useDocumentChunks(doc.id, { offset, limit: CHUNKS_PER_PAGE, page });
 
   return (
@@ -507,5 +512,32 @@ function DeleteDocumentDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const INDEX_LABELS = {
+  ready: { tone: "success", label: "Indexed" },
+  pending: { tone: "accent", label: "Indexing…" },
+  failed: { tone: "danger", label: "Failed" },
+  none: { tone: "neutral", label: "Not indexed" },
+} as const;
+
+function AiIndexStatus({ doc }: { doc: DocumentDetail }) {
+  const reindex = useLibraryMutation((id: number) => assistantService.reindex([id]));
+  const info = INDEX_LABELS[doc.ai_index_status] ?? INDEX_LABELS.none;
+  return (
+    <span className="inline-flex items-center gap-1.5" title={doc.ai_index_error ?? undefined}>
+      <Badge tone={info.tone}>{info.label}</Badge>
+      {doc.ai_index_status === "failed" || doc.ai_index_status === "none" ? (
+        <button
+          type="button"
+          className="text-xs text-accent hover:underline disabled:opacity-50"
+          disabled={reindex.isPending}
+          onClick={() => reindex.mutate(doc.id, { onError: (e) => toast.error(e.message) })}
+        >
+          Retry
+        </button>
+      ) : null}
+    </span>
   );
 }

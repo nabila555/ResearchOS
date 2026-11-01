@@ -57,7 +57,7 @@ from app.schemas.library import (
     TagRef,
     UrlImport,
 )
-from app.services import search_service
+from app.services import indexing_service, search_service
 from app.services.activity_service import log_activity
 from app.services.errors import ConflictError, InvalidRequestError, NotFoundError
 
@@ -90,6 +90,7 @@ def to_summary(doc: Document, hit: search_service.SearchHit | None = None) -> Do
         page_count=doc.page_count,
         tags=[TagRef(id=t.id, name=t.name) for t in sorted(doc.tags, key=lambda t: t.name.lower())],
         has_file=doc.file_path is not None,
+        ai_index_status=doc.ai_index_status,
         source_url=doc.source_url,
         created_at=doc.created_at,
         snippet=hit.snippet if hit else None,
@@ -116,6 +117,7 @@ def to_detail(db: Session, doc: Document) -> DocumentDetail:
         projects=[ProjectRef(id=p.id, name=p.name) for p in doc.projects],
         metadata_sources=extra.get("metadata_sources", {}),
         warnings=extra.get("warnings", []),
+        ai_index_error=doc.ai_index_error,
         error_message=doc.error_message,
         updated_at=doc.updated_at,
     )
@@ -256,6 +258,7 @@ def _create_document(
     _replace_chunks(db, doc, extracted.pages)
     db.flush()
     search_service.refresh_document_index(db, doc)
+    indexing_service.enqueue(db, [doc.id])
     verb = "Added note" if doc_type is DocumentType.NOTE else "Imported"
     log_activity(
         db,
@@ -409,6 +412,7 @@ def update_document(db: Session, document_id: int, data: DocumentUpdate) -> Docu
     if "note_body" in fields:
         doc.note_body = data.note_body or ""
         _replace_chunks(db, doc, extract_plain_text(doc.note_body, markdown=True).pages)
+        indexing_service.enqueue(db, [doc.id])
 
     for field in fields - {"note_body"}:
         sources[field] = "manual"

@@ -43,9 +43,21 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_chat_model: str = "llama3.1:8b"
     ollama_embed_model: str = "nomic-embed-text"
+    # Short timeout for status checks; generation can take minutes on a CPU.
     ollama_timeout_seconds: float = 2.0
+    ollama_generation_timeout_seconds: float = 600.0
+    ollama_num_ctx: int = Field(default=8192, ge=2048)
     anthropic_api_key: SecretStr | None = None
-    anthropic_model: str = "claude-sonnet-5-5"
+    anthropic_model: str = "claude-opus-5-5"
+
+    # Retrieval & indexing -----------------------------------------------------
+    retrieval_top_k: int = Field(default=8, ge=1, le=30)
+    retrieval_max_chars: int = Field(default=9000, ge=1000)
+    # Vector matches below this cosine similarity are ignored as unrelated.
+    retrieval_min_similarity: float = Field(default=0.45, ge=0.0, le=1.0)
+    embed_batch_size: int = Field(default=16, ge=1, le=256)
+    chat_history_messages: int = Field(default=6, ge=0, le=40)
+    run_background_worker: bool = True
 
     @field_validator("data_dir", mode="after")
     @classmethod
