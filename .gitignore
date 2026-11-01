@@ -1,0 +1,23 @@
+# Local data: documents, embeddings, database (never commit research files)
+/data/
+
+# Secrets
+.env
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node / Next.js (see frontend/.gitignore for the rest)
+node_modules/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
