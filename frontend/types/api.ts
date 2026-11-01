@@ -333,7 +333,15 @@ export interface AssistantStatus {
 
 // --- Research intelligence --------------------------------------------------------
 
-export type AnalysisKind = "profile" | "comparison" | "gap_analysis" | "detective";
+export type AnalysisKind =
+  | "profile"
+  | "comparison"
+  | "gap_analysis"
+  | "detective"
+  | "theme_summary"
+  | "summary"
+  | "methodology"
+  | "proposal";
 export type AnalysisStatus = "pending" | "running" | "done" | "failed" | "cancelled";
 
 export interface Evidence {
@@ -433,6 +441,9 @@ export interface AnalysisCreate {
   collection_id?: number;
   project_id?: number;
   focus?: string;
+  topic?: string;
+  gap_analysis_id?: number;
+  style?: CitationStyle;
 }
 
 // --- Knowledge management ---------------------------------------------------------
@@ -541,4 +552,28 @@ export interface ReviewSummary {
   research_question: string | null;
   theme_count: number;
   updated_at: string;
+}
+
+// --- Reports -------------------------------------------------------------------------
+
+export type ReportType =
+  | "comparison"
+  | "gap_analysis"
+  | "detective"
+  | "summary"
+  | "methodology"
+  | "proposal"
+  | "literature_review";
+
+export interface ReportSummaryItem {
+  id: number;
+  title: string;
+  report_type: ReportType;
+  source_document_ids: number[];
+  model_used: string | null;
+  created_at: string;
+}
+
+export interface Report extends ReportSummaryItem {
+  content_markdown: string;
 }

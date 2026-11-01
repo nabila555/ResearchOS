@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from app.api.deps import AppSettings, DbSession
 from app.citations import Style
 from app.models.analysis import AnalysisKind
+from app.models.report import Report
 from app.models.review import LiteratureReview, ReviewTheme
 from app.services import analysis_service, review_service
 from app.services.assistant_service import resolve_chat_provider
@@ -199,6 +200,24 @@ def summarise_theme(
     if worker is not None:
         worker.notify()
     return _detail(db, review.id)
+
+
+@router.post("/{review_id}/save-report", status_code=status.HTTP_201_CREATED)
+def save_review_report(review_id: int, db: DbSession, style: Style | None = None) -> dict[str, Any]:
+    """Snapshot the current review as a report (Reports page, PDF export, dashboard)."""
+    review = review_service.get_review(db, review_id)
+    doc_ids = list(dict.fromkeys(i.document_id for t in review.themes for i in t.items))
+    content = review_service.export_markdown(db, review, style or review.citation_style)  # type: ignore[arg-type]
+    report = Report(
+        title=review.title,
+        report_type="literature_review",
+        content_markdown=content,
+        source_document_ids=doc_ids,
+        model_used=None,
+    )
+    db.add(report)
+    db.commit()
+    return {"report_id": report.id}
 
 
 @router.get("/{review_id}/export")

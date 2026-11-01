@@ -197,7 +197,19 @@ def build_graph(
             for i, a in enumerate(ordered):
                 for b in ordered[i + 1 :]:
                     shared[(a, b)] += 1
+        # Keep only each paper's strongest links: a heavily cited classic would otherwise
+        # connect every pair of papers and make the graph unreadable.
+        strongest: set[tuple[int, int]] = set()
+        by_paper: dict[int, list[tuple[int, tuple[int, int]]]] = defaultdict(list)
+        for pair, count in shared.items():
+            by_paper[pair[0]].append((count, pair))
+            by_paper[pair[1]].append((count, pair))
+        for links in by_paper.values():
+            links.sort(key=lambda item: (-item[0], item[1]))
+            strongest.update(pair for _, pair in links[:SIMILAR_PER_PAPER])
         for (a, b), count in shared.items():
+            if (a, b) not in strongest:
+                continue
             graph.edge(
                 f"paper:{a}",
                 f"paper:{b}",

@@ -22,12 +22,12 @@ function ActiveNavList({ onNavigate }: { onNavigate?: () => void }) {
 function NavList({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
   return (
     <ul className="space-y-0.5">
-      {NAV_ITEMS.map((item, index) => {
+      {NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
         const available = isAvailable(item);
         const Icon = item.icon;
         // Visually separate the workspace items from projects/settings.
-        const separated = index === NAV_ITEMS.length - 2;
+        const separated = item.href === "/projects";
         return (
           <li key={item.href} className={cn(separated && "mt-3 border-t border-border pt-3")}>
             <Link
@@ -94,7 +94,7 @@ export function SidebarContent({
       </nav>
 
       <div className="flex items-center justify-between border-t border-border px-4 py-3">
-        <span className="text-[11px] text-subtle-foreground">Local-first · v0.5</span>
+        <span className="text-[11px] text-subtle-foreground">Local-first · v1.0</span>
         <ThemeToggle />
       </div>
     </div>

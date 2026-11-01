@@ -120,8 +120,10 @@ from existing tables (no graph table): metadata links, mean chunk embeddings, no
 reference strings, and verified profile statements. Citations are formatted on the fly from
 document metadata (`app/citations.py`).
 
-All tables planned for Phases 1-5 now exist. Phase 6 (export & polish) is not expected to need
-schema changes beyond optional report settings.
+All planned tables exist. Phase 6 needed no schema change: summary, methodology and
+proposal reports are `analyses` kinds whose output is stored in `reports`. PDF export
+(`app/reports/pdf.py`) renders report Markdown to HTML with raw HTML disabled, then lays it out
+with PyMuPDF's Story engine. No browser, network or system libraries are required.
 
 Migrations: Alembic, applied automatically at startup (`app/core/migrations.py`).
 A database created by Phase 1's `create_all` is stamped at `0001` and upgraded.

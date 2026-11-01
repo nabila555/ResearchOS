@@ -270,7 +270,14 @@ function DashboardContent({
           </Card>
 
           <Card>
-            <CardHeader title="Recent reports" />
+            <CardHeader
+              title="Recent reports"
+              action={
+                <Link href="/reports" className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
+                  All <ArrowRight className="size-3.5" />
+                </Link>
+              }
+            />
             <CardBody>
               {data.recent_reports.length === 0 ? (
                 <p className="text-[13px] text-muted-foreground">
@@ -281,7 +288,9 @@ function DashboardContent({
                   {data.recent_reports.map((report) => (
                     <li key={report.id} className="flex items-center gap-2 text-[13px]">
                       <ScrollText className="size-3.5 text-subtle-foreground" aria-hidden />
-                      <span className="flex-1 truncate">{report.title}</span>
+                      <Link href={`/reports?id=${report.id}`} className="flex-1 truncate hover:text-accent">
+                        {report.title}
+                      </Link>
                       <span className="text-xs text-subtle-foreground">
                         {formatRelativeTime(report.created_at)}
                       </span>

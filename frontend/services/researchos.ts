@@ -25,6 +25,9 @@ import type {
   Project,
   ProjectInput,
   ProjectStatus,
+  Report,
+  ReportSummaryItem,
+  ReportType,
   ReviewSummary,
   SystemStatus,
   Tag,
@@ -179,4 +182,15 @@ export const reviewService = {
     ),
   summarise: (themeId: number) => apiFetch<LiteratureReview>(`/api/reviews/themes/${themeId}/summary`, { method: "POST" }),
   exportUrl: (id: number, style?: CitationStyle) => `${API_BASE_URL}/api/reviews/${id}/export${toQueryString({ style })}`,
+};
+
+export const reportService = {
+  list: (reportType?: ReportType) =>
+    apiFetch<ReportSummaryItem[]>(`/api/reports${toQueryString({ report_type: reportType })}`),
+  get: (id: number) => apiFetch<Report>(`/api/reports/${id}`),
+  remove: (id: number) => apiFetch<void>(`/api/reports/${id}`, { method: "DELETE" }),
+  markdownUrl: (id: number) => `${API_BASE_URL}/api/reports/${id}/download`,
+  pdfUrl: (id: number) => `${API_BASE_URL}/api/reports/${id}/pdf`,
+  saveReview: (reviewId: number) =>
+    apiFetch<{ report_id: number }>(`/api/reviews/${reviewId}/save-report`, { method: "POST" }),
 };

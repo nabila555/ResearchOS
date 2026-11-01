@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAnalyses } from "@/hooks/use-research-data";
 import { cn, formatRelativeTime } from "@/lib/utils";
-import { analysisService } from "@/services/researchos";
+import { analysisService, reportService } from "@/services/researchos";
 import type { Analysis, AnalysisKind, Evidence, FieldStatus, ProfileFieldValue } from "@/types/api";
 
 /** Small page chip linking to the cited page; red when the quote could not be verified. */
@@ -126,11 +126,18 @@ export function AnalysisStatusCard({ analysis, onChange }: { analysis: Analysis;
           {analysis.model} · {formatRelativeTime(analysis.updated_at)}
         </span>
         {analysis.report_id ? (
-          <Button asChild size="sm" variant="ghost" className="ml-auto">
-            <a href={analysisService.reportDownloadUrl(analysis.report_id)} download>
-              <Download /> Markdown
-            </a>
-          </Button>
+          <span className="ml-auto flex gap-1">
+            <Button asChild size="sm" variant="ghost">
+              <a href={analysisService.reportDownloadUrl(analysis.report_id)} download>
+                <Download /> Markdown
+              </a>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <a href={reportService.pdfUrl(analysis.report_id)} download>
+                <Download /> PDF
+              </a>
+            </Button>
+          </span>
         ) : null}
         <Button size="sm" variant="ghost" onClick={() => act("rerun")}>
           <RotateCcw /> Run again

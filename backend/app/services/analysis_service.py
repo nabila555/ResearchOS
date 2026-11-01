@@ -20,10 +20,12 @@ from app.models.analysis import Analysis, AnalysisKind, AnalysisStatus, PaperPro
 from app.models.library import Chunk, Document, DocumentAuthor, collection_documents
 from app.models.project import project_documents
 from app.models.report import Report
+from app.reports import builders
 from app.research_analysis import detective, gaps, synthesis
 from app.research_analysis.evidence import chunk_signature
 from app.research_analysis.markdown import comparison_markdown, detective_markdown, gaps_markdown
 from app.research_analysis.profile import FIELDS, STEPS, build_profile
+from app.services import citation_service
 from app.services.activity_service import log_activity
 from app.services.errors import InvalidRequestError, NotFoundError
 
@@ -35,11 +37,17 @@ LIMITS = {
     AnalysisKind.COMPARISON: (2, 6),
     AnalysisKind.GAP_ANALYSIS: (2, 12),
     AnalysisKind.THEME_SUMMARY: (1, 15),
+    AnalysisKind.SUMMARY: (1, 10),
+    AnalysisKind.METHODOLOGY: (2, 15),
+    AnalysisKind.PROPOSAL: (2, 12),
 }
 REPORT_TYPES = {
     AnalysisKind.COMPARISON: "comparison",
     AnalysisKind.GAP_ANALYSIS: "gap_analysis",
     AnalysisKind.DETECTIVE: "detective",
+    AnalysisKind.SUMMARY: "summary",
+    AnalysisKind.METHODOLOGY: "methodology",
+    AnalysisKind.PROPOSAL: "proposal",
 }
 
 
@@ -118,6 +126,17 @@ def create_analysis(
             else f"Comparison of {len(document_ids)} papers"
         ),
         AnalysisKind.THEME_SUMMARY: f"Theme summary: {(params or {}).get('theme_name', 'theme')}",
+        AnalysisKind.SUMMARY: (
+            f"Research summary: {first}"
+            if len(document_ids) == 1
+            else f"Research summary of {len(document_ids)} papers"
+        ),
+        AnalysisKind.METHODOLOGY: f"Methodology analysis of {len(document_ids)} papers",
+        AnalysisKind.PROPOSAL: (
+            f"Research proposal: {(params or {})['topic']}"
+            if (params or {}).get("topic")
+            else "Research proposal draft"
+        ),
         AnalysisKind.GAP_ANALYSIS: (params or {}).get("label")
         or f"Research gaps across {len(document_ids)} papers",
     }
@@ -244,6 +263,20 @@ def _documents(db: Session, ids: list[int]) -> list[Document]:
     return [docs[i] for i in ids if i in docs]
 
 
+def _latest_detective_results(db: Session, document_ids: list[int]) -> dict[int, dict[str, Any]]:
+    found: dict[int, dict[str, Any]] = {}
+    rows = db.scalars(
+        select(Analysis)
+        .where(Analysis.kind == AnalysisKind.DETECTIVE, Analysis.status == AnalysisStatus.DONE)
+        .order_by(Analysis.created_at.desc(), Analysis.id.desc())
+    )
+    for analysis in rows:
+        doc_id = analysis.document_ids[0] if analysis.document_ids else None
+        if doc_id in document_ids and doc_id not in found and analysis.result:
+            found[doc_id] = analysis.result
+    return found
+
+
 def _run(runner: _Runner) -> tuple[dict[str, Any], str | None]:
     """Execute the analysis. Returns (result, markdown report or None)."""
     analysis, db = runner.analysis, runner.db
@@ -269,9 +302,34 @@ def _run(runner: _Runner) -> tuple[dict[str, Any], str | None]:
         result["document"] = {"id": docs[0].id, "title": docs[0].title}
         return result, detective_markdown(analysis.title, result, model)
 
-    synthesis_step = analysis.kind in (AnalysisKind.GAP_ANALYSIS, AnalysisKind.THEME_SUMMARY)
+    synthesis_step = analysis.kind in (
+        AnalysisKind.GAP_ANALYSIS,
+        AnalysisKind.THEME_SUMMARY,
+        AnalysisKind.PROPOSAL,
+    )
     runner.total_steps = len(STEPS) * len(docs) + (1 if synthesis_step else 0)
     profiles = {doc.id: runner.ensure_profile(doc) for doc in docs}
+    style = analysis.params.get("style", "apa")
+    cites = {c.id: c for c in citation_service.load(db, [d.id for d in docs])}
+
+    if analysis.kind == AnalysisKind.SUMMARY:
+        markdown = builders.summary_markdown(
+            analysis.title,
+            [(cites.get(d.id), d.title, profiles[d.id]) for d in docs],
+            analysis.model,
+            style,
+        )
+        return {"document_ids": analysis.document_ids}, markdown
+
+    if analysis.kind == AnalysisKind.METHODOLOGY:
+        detective_results = _latest_detective_results(db, [d.id for d in docs])
+        markdown = builders.methodology_markdown(
+            analysis.title,
+            [(cites.get(d.id), d.title, profiles[d.id], detective_results.get(d.id)) for d in docs],
+            analysis.model,
+            style,
+        )
+        return {"document_ids": analysis.document_ids}, markdown
 
     if analysis.kind == AnalysisKind.COMPARISON:
         result = {
@@ -293,6 +351,26 @@ def _run(runner: _Runner) -> tuple[dict[str, Any], str | None]:
         gaps.PaperDigest(f"P{i + 1}", d.id, d.title, d.publication_year, profiles[d.id])
         for i, d in enumerate(docs)
     ]
+    if analysis.kind == AnalysisKind.PROPOSAL:
+        runner.step(f"Drafting a proposal from {len(docs)} papers")
+        gap_result = None
+        gap_id = analysis.params.get("gap_analysis_id")
+        if gap_id is not None:
+            gap = db.get(Analysis, gap_id)
+            if gap is not None and gap.status == AnalysisStatus.DONE:
+                gap_result = gap.result
+        result = builders.draft_proposal(
+            runner.provider, digests, analysis.params.get("topic"), gap_result
+        )
+        markdown = builders.proposal_markdown(
+            analysis.title,
+            result,
+            {d.label: cites.get(d.document_id) for d in digests},
+            analysis.model,
+            style,
+        )
+        return result, markdown
+
     if analysis.kind == AnalysisKind.THEME_SUMMARY:
         runner.step(f"Writing a synthesis of {len(docs)} papers")
         result = synthesis.summarise_theme(

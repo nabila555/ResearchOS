@@ -490,3 +490,19 @@ def test_export_replaces_model_paper_labels(client: TestClient, chat: FakeChat) 
     # Both papers are named in the sentence, so no duplicate parenthetical citation follows.
     assert "Lovelace (2021) found an effect that Hopper (2019) did not replicate." in markdown
     assert "P1" not in markdown
+
+
+def test_replace_paper_labels() -> None:
+    from app.citations import replace_paper_labels
+
+    data = {"P1": (ARTICLE, 1), "P2": (REPORT, 2)}
+    text, named = replace_paper_labels(
+        "Prior work (P1) and (P1, P2) differs; P2 disagrees [P9].", data.get, "apa"
+    )
+    assert (
+        text
+        == "Prior work (Patel et al., 2024) and (Patel et al., 2024; Lee, 2019) differs; Lee (2019) disagrees [P9]."
+    )
+    assert named == {"P1", "P2"}
+    ieee, _ = replace_paper_labels("See (P1, P2).", data.get, "ieee")
+    assert ieee == "See [1], [2]."

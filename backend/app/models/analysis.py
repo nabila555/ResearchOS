@@ -15,6 +15,9 @@ class AnalysisKind(enum.StrEnum):
     GAP_ANALYSIS = "gap_analysis"
     DETECTIVE = "detective"
     THEME_SUMMARY = "theme_summary"  # literature review theme synthesis
+    SUMMARY = "summary"  # research summary report (no extra model call)
+    METHODOLOGY = "methodology"  # methodology analysis report (no extra model call)
+    PROPOSAL = "proposal"  # model-drafted research proposal
 
 
 class AnalysisStatus(enum.StrEnum):

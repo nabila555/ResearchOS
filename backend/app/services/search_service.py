@@ -29,6 +29,8 @@ class SearchHit:
     score: float  # lower is better (BM25 convention)
     snippet: str | None = None
     page: int | None = None
+    # Best-matching passage; its snippet is generated only for displayed results.
+    chunk_id: int | None = None
 
 
 def _is_sqlite(db: Session) -> bool:
@@ -85,24 +87,45 @@ def search(db: Session, query: str, limit: int = 1000) -> list[SearchHit]:
     ):
         hits[doc_id] = SearchHit(doc_id, score * DOCUMENT_SCORE_BOOST)
 
+    # Snippets are expensive, so ranking runs without them; add_snippets() fills in the page.
     chunk_rows = db.execute(
         text(
-            "SELECT c.document_id, c.page_start, "
-            "snippet(chunks_fts, 0, :hs, :he, ' … ', 28) AS snip, bm25(chunks_fts) AS score "
+            "SELECT c.id, c.document_id, c.page_start, bm25(chunks_fts) AS score "
             "FROM chunks_fts JOIN chunks c ON c.id = chunks_fts.rowid "
             "WHERE chunks_fts MATCH :q ORDER BY score LIMIT :limit"
         ),
-        {"q": fts_query, "limit": limit * 4, "hs": HIGHLIGHT_START, "he": HIGHLIGHT_END},
+        {"q": fts_query, "limit": limit * 4},
     )
-    for doc_id, page, snip, score in chunk_rows:
+    for chunk_id, doc_id, page, score in chunk_rows:
         hit = hits.get(doc_id)
         if hit is None:
-            hits[doc_id] = SearchHit(doc_id, score, snip, page)
+            hits[doc_id] = SearchHit(doc_id, score, page=page, chunk_id=chunk_id)
         else:
-            if hit.snippet is None:  # best passage for a document matched on metadata
-                hit.snippet, hit.page = snip, page
+            if hit.chunk_id is None:  # best passage for a document matched on metadata
+                hit.page, hit.chunk_id = page, chunk_id
             hit.score = min(hit.score, score)
     return sorted(hits.values(), key=lambda h: h.score)[:limit]
+
+
+def add_snippets(db: Session, query: str, hits: list[SearchHit]) -> None:
+    """Fill ``snippet`` (highlighted passage) for the given hits only."""
+    fts_query = to_fts_query(query)
+    chunk_ids = [h.chunk_id for h in hits if h.chunk_id is not None]
+    if fts_query is None or not chunk_ids or not _is_sqlite(db):
+        return
+    placeholders = ", ".join(f":c{i}" for i in range(len(chunk_ids)))
+    params = {f"c{i}": cid for i, cid in enumerate(chunk_ids)}
+    rows = db.execute(
+        text(
+            "SELECT rowid, snippet(chunks_fts, 0, :hs, :he, ' … ', 28) FROM chunks_fts "
+            f"WHERE chunks_fts MATCH :q AND rowid IN ({placeholders})"
+        ),
+        {"q": fts_query, "hs": HIGHLIGHT_START, "he": HIGHLIGHT_END, **params},
+    )
+    snippets = dict(rows.all())
+    for hit in hits:
+        if hit.chunk_id in snippets:
+            hit.snippet = snippets[hit.chunk_id]
 
 
 def _search_like(db: Session, query: str, limit: int) -> list[SearchHit]:

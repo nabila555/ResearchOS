@@ -15,7 +15,7 @@ import httpx
 from app.document_processing.types import ProcessingError
 
 MAX_REDIRECTS = 5
-USER_AGENT = "ResearchOS/0.5 (local research assistant; +https://github.com/)"
+USER_AGENT = "ResearchOS/1.0 (local research assistant; +https://github.com/)"
 HTML_TYPES = {"text/html", "application/xhtml+xml"}
 TEXT_TYPES = {"text/plain", "text/markdown"}
 PDF_TYPES = {"application/pdf", "application/x-pdf"}

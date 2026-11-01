@@ -1,6 +1,6 @@
 # Development status
 
-_Last updated: 2026-11-02 · version 0.5.0_
+_Last updated: 2026-11-02 · version 1.0.0_
 
 | Phase | Status |
 |---|---|
@@ -9,7 +9,72 @@ _Last updated: 2026-11-02 · version 0.5.0_
 | 3. AI Assistant | ✅ complete (0.3.0) |
 | 4. Research Intelligence | ✅ complete (0.4.0) |
 | 5. Knowledge Management | ✅ complete (0.5.0) |
-| 6. Export & Polish | ⏳ next |
+| 6. Export & Polish | ✅ complete (1.0.0) |
+
+## Phase 6: Export & Polish ✅
+
+### Done
+
+**Reports**
+- New report types, generated in the background like other analyses:
+  - **Research summary** (1–10 papers) and **Methodology analysis** (2–15 papers): assembled from
+    verified profiles with **no additional model call**. The methodology report adds author
+    limitations, a reproducibility table from Paper Detective runs and a reference list.
+  - **Research proposal** (2–12 papers, optionally built on a finished gap analysis, with a topic):
+    model-drafted (constrained JSON). Background and problem sentences must cite real papers and
+    are flagged otherwise. Questions, objectives, methods, contributions and risks are labelled
+    as proposals. Formatted in-text citations and references in the chosen style.
+  - **Literature review → Save as report** (snapshot of the export).
+- **Reports page** (new sidebar item between Research Projects and Settings): filter by type, a
+  safe Markdown viewer with tables, Markdown/PDF download, print, delete, and a *New report*
+  panel with progress. Dashboard "Recent reports" links there; analysis results also offer PDF.
+- **PDF export** works fully offline: Markdown → HTML (raw HTML disabled) → PyMuPDF Story layout
+  with a print stylesheet, footer title, page numbers and PDF metadata. About 50 ms per report.
+- A shared `replace_paper_labels` helper turns model-written "P1" / "(P1, P2)" labels into proper
+  narrative or parenthetical citations (found in the real proposal output).
+
+**Performance** (`backend/scripts/benchmark.py`, synthetic 500 papers / 10,000 chunks):
+- Full-text search went from **226 ms to 63 ms** by generating highlighted snippets only for the
+  results page (previously for up to 4,000 matching passages).
+- The knowledge graph went from **35,869 to 4,690 edges** by keeping each paper's 3 strongest
+  shared-reference links (a widely cited classic connected every pair). Browser layout uses
+  fewer iterations above 300 nodes (1.07 s → 0.56 s at 639 nodes).
+- Every other endpoint is under about 110 ms (see the README table).
+
+**Usability**
+- `start.ps1` / `start.sh`: first-run setup (venv, pip, npm), Ollama check, port-conflict check,
+  dev or `-Production` mode, and clean shutdown of both servers (child processes included).
+- Both servers now bind to `127.0.0.1` only (the production run showed Next.js listening on the
+  LAN by default).
+- `docs/USER_GUIDE.md`: end-to-end workflow, how to read verification labels, privacy, backup.
+
+**Tests**: backend **145** (10 new: PDF rendering and HTML safety, summary without extra model
+calls, methodology with and without Detective data, proposal verification and gap reuse, report
+endpoints and filters, save-review, limits, graph edge cap, snippet paging, label replacement).
+Frontend **38** (report rendering with tables and line breaks, HTML/image safety). `next build`
+passes.
+
+**Verified for real**:
+- The start script in production mode (startup, both servers answering, and shutdown when one
+  stops); the port guard.
+- `llama3.1:8b` proposal from a gap analysis in 140 s; the summary and methodology reports were
+  instant because profiles were cached.
+- The methodology PDF was inspected visually.
+- Reports page: list, viewer, tables with line breaks, download links.
+
+### Known limitations
+- **Proposals inherit the verification limit:** in testing the model attributed "learning style"
+  (an idea from a gap hypothesis) to a paper that never mentions it. The citation was structurally
+  valid, so it wasn't flagged. Treat proposals as drafts to check, which the report header says.
+- **PDF layout is simplified** compared with the screen (PyMuPDF's HTML engine). Very wide tables
+  wrap tightly.
+- **Uploads are processed while you wait;** only embedding and analyses run in the background.
+  Typical papers take 1–2 s; very large scanned PDFs take longer.
+- **No browser end-to-end test suite** (for example Playwright) is included; UI flows were verified
+  manually in the in-app browser each phase.
+- **No licence** has been chosen yet.
+- **Test data:** your library still contains the two fictional test papers and the analyses,
+  reports and review made while testing.
 
 ## Phase 5: Knowledge Management ✅
 
@@ -264,5 +329,9 @@ filters, facets; library, document page, and Ctrl+K quick search. See git histor
 ## Phase 1: Foundation ✅
 FastAPI + SQLite backend, Next.js shell, theme, dashboard, projects, settings.
 
-## Phase 6: Export & Polish ⏳ next
-- [ ] Reports + Markdown export · PDF export · Performance · E2E tests · Docs
+## Beyond 1.0 (ideas, not commitments)
+- OCR for scanned PDFs (Tesseract, free) and background extraction for very large files.
+- Claim-level verification (an NLI model checks that a cited passage *entails* the statement).
+- Books, chapters, conference papers and theses as citation types; DOI lookup via Crossref (opt-in).
+- Browser end-to-end tests (Playwright) and packaged installers.
+- Optional PostgreSQL + pgvector backend for very large shared libraries.

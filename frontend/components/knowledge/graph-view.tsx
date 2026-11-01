@@ -106,7 +106,8 @@ export function layout(nodes: GraphNode[], edges: GraphEdge[]): Map<string, { x:
     .force("center", forceCenter(0, 0))
     .force("collide", forceCollide<SimNode>((d) => d.radius))
     .stop();
-  simulation.tick(300);
+  // Fewer iterations for big graphs keep the (synchronous) layout around half a second.
+  simulation.tick(nodes.length > 300 ? 150 : 300);
   return new Map(simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
 }
 

@@ -10,6 +10,7 @@ import {
   Layers,
   Loader2,
   Plus,
+  ScrollText,
   Sparkles,
   Trash2,
   X,
@@ -30,7 +31,7 @@ import { Input, Label, Select, Textarea } from "@/components/ui/form-controls";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { formatAuthors } from "@/components/library/shared";
 import { cn, formatRelativeTime, pluralize } from "@/lib/utils";
-import { reviewService } from "@/services/researchos";
+import { reportService, reviewService } from "@/services/researchos";
 import type { CitationStyle, ClaimRef, LiteratureReview, ReviewTheme } from "@/types/api";
 
 const reviewKey = (id: number) => ["review", id] as const;
@@ -168,6 +169,7 @@ function NewReviewDialog({ open, onOpenChange, onCreated }: { open: boolean; onO
 }
 
 function ReviewEditor({ reviewId, onDeleted }: { reviewId: number; onDeleted: () => void }) {
+  const router = useRouter();
   const review = useQuery({
     queryKey: reviewKey(reviewId),
     queryFn: () => reviewService.get(reviewId),
@@ -216,6 +218,22 @@ function ReviewEditor({ reviewId, onDeleted }: { reviewId: number; onDeleted: ()
               <a href={reviewService.exportUrl(reviewId)} download>
                 <Download /> Export Markdown
               </a>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={async () => {
+                try {
+                  const { report_id } = await reportService.saveReview(reviewId);
+                  toast.success("Saved to Reports (PDF export available there)", {
+                    action: { label: "Open", onClick: () => router.push(`/reports?id=${report_id}`) },
+                  });
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not save");
+                }
+              }}
+            >
+              <ScrollText /> Save as report
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSuggesting(true)}>
               <Layers /> Suggest themes

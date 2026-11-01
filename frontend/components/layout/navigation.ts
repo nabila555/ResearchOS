@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Network,
   Quote,
+  ScrollText,
   ScanSearch,
   Settings,
 } from "lucide-react";
@@ -23,7 +24,7 @@ export interface NavItem {
 }
 
 /** The phase whose features are fully implemented. */
-export const CURRENT_PHASE = 5;
+export const CURRENT_PHASE = 6;
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -96,6 +97,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FolderKanban,
     phase: 1,
     summary: "Group your work around research questions.",
+    planned: [],
+  },
+  {
+    href: "/reports",
+    label: "Reports",
+    icon: ScrollText,
+    phase: 6,
+    summary: "Generated reports, with Markdown and PDF export.",
     planned: [],
   },
   {

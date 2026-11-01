@@ -40,7 +40,7 @@ describe("ErrorState", () => {
 });
 
 describe("navigation", () => {
-  it("contains the ten main sections in order", () => {
+  it("contains the main sections in order", () => {
     expect(NAV_ITEMS.map((i) => i.label)).toEqual([
       "Dashboard",
       "Research Library",
@@ -51,6 +51,7 @@ describe("navigation", () => {
       "Literature Review",
       "Citation Manager",
       "Research Projects",
+      "Reports",
       "Settings",
     ]);
   });

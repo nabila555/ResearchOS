@@ -558,6 +558,8 @@ def list_documents(db: Session, filters: DocumentFilters) -> DocumentPage:
     if sort == "relevance" and query:
         ids.sort(key=lambda i: hits[i].score)
     page_ids = ids[filters.offset : filters.offset + filters.limit]
+    if query:
+        search_service.add_snippets(db, query, [hits[i] for i in page_ids if i in hits])
     docs = {
         d.id: d
         for d in db.scalars(

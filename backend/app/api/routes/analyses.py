@@ -4,8 +4,9 @@ from fastapi import APIRouter, Request, Response, status
 from sqlalchemy import select
 
 from app.api.deps import AppSettings, DbSession
-from app.models.analysis import AnalysisKind
+from app.models.analysis import AnalysisKind, AnalysisStatus
 from app.models.report import Report
+from app.reports.pdf import markdown_to_pdf
 from app.research_analysis.profile import FIELDS
 from app.schemas.analysis import (
     AnalysisCreate,
@@ -18,7 +19,7 @@ from app.schemas.analysis import (
 )
 from app.services import analysis_service
 from app.services.assistant_service import resolve_chat_provider
-from app.services.errors import NotFoundError
+from app.services.errors import InvalidRequestError, NotFoundError
 
 router = APIRouter(tags=["analyses"])
 
@@ -35,10 +36,24 @@ def create_analysis(
 ) -> AnalysisRead:
     ai = request.app.state.ai
     provider = ai.chat(resolve_chat_provider(db, settings, ai))
+    document_ids = list(data.document_ids)
+    if data.kind == AnalysisKind.PROPOSAL and data.gap_analysis_id is not None:
+        gap = analysis_service.get_analysis(db, data.gap_analysis_id)
+        if gap.kind != AnalysisKind.GAP_ANALYSIS or gap.status != AnalysisStatus.DONE:
+            raise InvalidRequestError("Choose a finished gap analysis to build the proposal on.")
+        if not document_ids and data.collection_id is None and data.project_id is None:
+            document_ids = list(gap.document_ids)
     ids = analysis_service.resolve_document_ids(
-        db, data.document_ids, data.collection_id, data.project_id
+        db, document_ids, data.collection_id, data.project_id
     )
     params: dict = {}
+    if data.kind in (AnalysisKind.SUMMARY, AnalysisKind.METHODOLOGY, AnalysisKind.PROPOSAL):
+        params["style"] = data.style
+    if data.kind == AnalysisKind.PROPOSAL:
+        if data.topic and data.topic.strip():
+            params["topic"] = data.topic.strip()
+        if data.gap_analysis_id is not None:
+            params["gap_analysis_id"] = data.gap_analysis_id
     if data.kind == AnalysisKind.GAP_ANALYSIS:
         if data.focus and data.focus.strip():
             params["focus"] = data.focus.strip()
@@ -127,11 +142,11 @@ def get_profile(document_id: int, db: DbSession) -> PaperProfileRead:
 
 
 @router.get("/reports", response_model=list[ReportSummary])
-def list_reports(db: DbSession) -> list[ReportSummary]:
-    rows = db.scalars(
-        select(Report).order_by(Report.created_at.desc(), Report.id.desc()).limit(200)
-    )
-    return [ReportSummary.model_validate(r) for r in rows]
+def list_reports(db: DbSession, report_type: str | None = None) -> list[ReportSummary]:
+    stmt = select(Report).order_by(Report.created_at.desc(), Report.id.desc()).limit(500)
+    if report_type:
+        stmt = stmt.where(Report.report_type == report_type)
+    return [ReportSummary.model_validate(r) for r in db.scalars(stmt)]
 
 
 def _get_report(db: DbSession, report_id: int) -> Report:
@@ -149,12 +164,25 @@ def get_report(report_id: int, db: DbSession) -> ReportRead:
 @router.get("/reports/{report_id}/download")
 def download_report(report_id: int, db: DbSession) -> Response:
     report = _get_report(db, report_id)
-    filename = re.sub(r"[^A-Za-z0-9._-]+", "-", report.title).strip("-")[:80] or "report"
     return Response(
         content=report.content_markdown,
         media_type="text/markdown; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.md"'},
+        headers={"Content-Disposition": f'attachment; filename="{_filename(report)}.md"'},
     )
+
+
+@router.get("/reports/{report_id}/pdf")
+def download_report_pdf(report_id: int, db: DbSession) -> Response:
+    report = _get_report(db, report_id)
+    return Response(
+        content=markdown_to_pdf(report.content_markdown, report.title),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{_filename(report)}.pdf"'},
+    )
+
+
+def _filename(report: Report) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", report.title).strip("-")[:80] or "report"
 
 
 @router.delete("/reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

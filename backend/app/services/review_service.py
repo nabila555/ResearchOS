@@ -8,7 +8,7 @@ import numpy as np
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.citations import CitationData, Style, bibliography, in_text, narrative
+from app.citations import CitationData, Style, bibliography, in_text, replace_paper_labels
 from app.models.analysis import Analysis, AnalysisKind, AnalysisStatus
 from app.models.library import Document, DocumentAuthor
 from app.models.review import LiteratureReview, ReviewTheme, ReviewThemeItem
@@ -213,19 +213,18 @@ def export_markdown(db: Session, review: LiteratureReview, style: Style) -> str:
         """Sentence text with stray "P1"-style labels turned into narrative citations, followed
         by a parenthetical citation for the supporting papers not already named in the text."""
         by_label = {p["label"]: p["document_id"] for p in papers}
-        named: set[int] = set()
 
-        def replace(match: re.Match[str]) -> str:
-            doc_id = by_label.get(match.group(0))
+        def resolve(label: str) -> tuple[CitationData, int] | None:
+            doc_id = by_label.get(label)
             data = cite.get(doc_id) if doc_id is not None else None
-            if data is None:
-                return match.group(0)
+            if data is None or doc_id is None:
+                return None
             numbers.setdefault(doc_id, len(numbers) + 1)
-            named.add(doc_id)
-            return narrative(data, style, numbers[doc_id])
+            return data, numbers[doc_id]
 
-        text = re.sub(r"\bP\d+\b", replace, claim["text"].rstrip("."))
-        remaining = [p["document_id"] for p in claim["papers"] if p["document_id"] not in named]
+        text, named = replace_paper_labels(claim["text"].rstrip("."), resolve, style)
+        named_ids = {by_label[label] for label in named}
+        remaining = [p["document_id"] for p in claim["papers"] if p["document_id"] not in named_ids]
         return f"{text}{ref(remaining)}"
 
     lines = [f"# {review.title}", ""]

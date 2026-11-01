@@ -3,8 +3,8 @@
 A local-first, open-source **research operating system**: collect, organise, analyse,
 and connect research material with AI that runs on your own machine and cites its sources.
 
-> **Status:** Phases 1–5 complete. Every sidebar section works: library, AI assistant,
-> research intelligence, knowledge graph, literature review, and citation manager. See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+> **Status:** 1.0. All six roadmap phases are complete. New here? Read the
+> [user guide](docs/USER_GUIDE.md). See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 > and the [roadmap](docs/ROADMAP.md). Sections not built yet are labelled with their
 > phase in the sidebar and explain what's planned; they contain no non-functional controls.
 
@@ -20,6 +20,9 @@ and connect research material with AI that runs on your own machine and cites it
   similarity, shared references, verified findings), a literature review workspace with
   cited AI theme syntheses and Markdown export, and a citation manager (APA 7, MLA 9, Chicago,
   IEEE; BibTeX/RIS export) that never invents missing details.
+- **Reports:** research summaries, methodology analyses, comparisons, gap reports, Paper
+  Detective reviews, literature reviews and AI-drafted research proposals, exported as
+  Markdown or PDF (generated offline).
 - **Honest AI assistant:** answers only from your sources, cites document and page for every
   claim, checks each citation against the passages it was given, and says so when the evidence
   is insufficient. Runs locally on Ollama; the Claude API is optional and needs your consent.
@@ -39,6 +42,16 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Ollama | optional until Phase 3 | `winget install Ollama.Ollama` or ollama.com/download |
 
 ## Quick start
+
+The easiest way is the start script in this folder. The first run installs everything.
+
+```powershell
+.\start.ps1
+```
+
+On macOS/Linux use `./start.sh`. Then open http://localhost:3000. Add `-Production`
+(`--production`) for an optimised build. Both servers listen only on this computer
+(`127.0.0.1`). The manual steps are below.
 
 ### 1. Backend (terminal 1)
 
@@ -115,6 +128,24 @@ cd backend
 
 Review the generated file in `backend/migrations/versions/` before committing it.
 
+## Performance
+
+Measured with `python scripts/benchmark.py` (in `backend/`) on a synthetic library of 500 papers
+and 10,000 passages with 768-dimension embeddings (Ryzen 7 4800HS laptop, CPU only):
+
+| Endpoint | Median |
+|---|---|
+| Dashboard | 8 ms |
+| Library list / filters / facets | 9 ms |
+| Full-text search | 63 ms |
+| Hybrid retrieval for the assistant | 111 ms |
+| Citations / BibTeX for the whole library | 44–48 ms |
+| Knowledge graph, all layers (639 nodes, 4,690 edges) | 262 ms (+ about 0.5 s layout in the browser) |
+| PDF export of a report | 50 ms |
+
+Model calls dominate everything else: about 25–40 s per assistant answer and about 1 min per
+analysis step with an 8B model on a CPU.
+
 ## Project layout
 
 ```
@@ -128,8 +159,11 @@ researchos/
 │   │   ├── services/         # business logic
 │   │   ├── ai/               # providers (Ollama, optional Claude), registry, vector index
 │   │   ├── document_processing/  # validation, storage, extraction, metadata, chunking, URL fetch
+│   │   ├── reports/              # report builders and Markdown → PDF
+│   │   ├── citations.py          # APA / MLA / Chicago / IEEE, BibTeX, RIS
 │   │   └── research_analysis/    # comparison, gaps, detective (Phase 4)
 │   ├── migrations/           # Alembic migrations
+│   ├── scripts/benchmark.py  # synthetic-library performance benchmark
 │   └── tests/                # pytest (sample PDFs/DOCX are generated, see tests/fixtures)
 ├── frontend/
 │   ├── app/                  # routes (App Router)
@@ -142,7 +176,8 @@ researchos/
 │   └── tests/                # pytest (sample PDFs/DOCX are generated, see tests/fixtures)                # Vitest
 ├── data/                     # created at runtime, git-ignored
 │   ├── documents/  embeddings/  database/
-└── docs/                     # architecture, roadmap
+├── docs/                     # user guide, architecture, roadmap
+├── start.ps1 / start.sh      # one-command start
 ```
 
 ## Troubleshooting
@@ -166,6 +201,8 @@ researchos/
 | Citation shows **Missing: volume / pages / doi** | Open the document → *Edit details* → Citation details. Missing values are never guessed. |
 | Paper cited as a generic document instead of a journal article | Add the journal name (venue) in *Edit details*. |
 | Knowledge graph has no “similar” links | Papers must be indexed (Settings → AI assistant), or lower the similarity threshold. |
+| `start.ps1` cannot be run (“running scripts is disabled”) | Run `powershell -ExecutionPolicy Bypass -File .\start.ps1`, or start the servers manually. |
+| PDF export looks different from the screen | PDFs are rendered offline by PyMuPDF with a print stylesheet; content is identical, layout is simplified. |
 | Model shows **not installed** | `ollama pull <model>` with the exact name shown, or change `OLLAMA_CHAT_MODEL` / `OLLAMA_EMBED_MODEL`. |
 | Upload fails with **“does not look like a valid PDF”** | The file's contents don't match its extension (e.g. a renamed file). Re-export it as a real PDF. |
 | **“The PDF is password-protected”** | Remove the password in your PDF reader (Print → Save as PDF) and import again. |
@@ -178,6 +215,8 @@ researchos/
 | Reset all local data | Stop the backend and delete the `data/` folder. **This permanently deletes your library.** |
 
 ## Licence
+
+_Not chosen yet: pick one (for example MIT or AGPL-3.0) before publishing._
 
 Intended to be open source (licence to be chosen). Note that PyMuPDF is AGPL-3.0; see
 docs/ARCHITECTURE.md §2.

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,6 +14,11 @@ class AnalysisCreate(BaseModel):
     project_id: int | None = None
     # Gap analysis only: optional theme to focus on.
     focus: str | None = Field(default=None, max_length=300)
+    # Research proposal only: topic and an optional earlier gap analysis to build on.
+    topic: str | None = Field(default=None, max_length=300)
+    gap_analysis_id: int | None = None
+    # Reports: citation style for references.
+    style: Literal["apa", "mla", "chicago", "ieee"] = "apa"
 
 
 class AnalysisSummary(BaseModel):

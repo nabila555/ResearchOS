@@ -9,6 +9,7 @@ nouns, so the UI reminds users to check capitalisation.
 
 import re
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
@@ -531,3 +532,43 @@ def to_ris(items: list[CitationData]) -> str:
         lines.append("ER  - ")
         records.append("\n".join(lines))
     return "\n\n".join(records) + ("\n" if records else "")
+
+
+_LABEL_GROUP = re.compile(r"[(\[]\s*P\d+(?:\s*(?:[,;]|and|&)\s*P\d+)*\s*[)\]]")
+_LABEL = re.compile(r"\bP\d+\b")
+
+
+def replace_paper_labels(
+    text: str,
+    resolve: Callable[[str], tuple[CitationData, int] | None],
+    style: Style,
+) -> tuple[str, set[str]]:
+    """Turn model-written paper labels into citations.
+
+    "(P1)" / "(P1, P2)" / "[P1]" become parenthetical citations; a bare "P1" in a sentence
+    becomes a narrative citation ("Lovelace et al. (2021)"). ``resolve`` maps a label to its
+    citation data and number (IEEE). Returns the new text and the labels that were cited.
+    """
+    named: set[str] = set()
+
+    def group(match: re.Match[str]) -> str:
+        cited = []
+        for label in _LABEL.findall(match.group(0)):
+            found = resolve(label)
+            if found is not None:
+                named.add(label)
+                cited.append(in_text(found[0], style, found[1]))
+        if not cited:
+            return match.group(0)
+        if style == "ieee":
+            return ", ".join(cited)
+        return "(" + "; ".join(c.strip("()") for c in cited) + ")"
+
+    def single(match: re.Match[str]) -> str:
+        found = resolve(match.group(0))
+        if found is None:
+            return match.group(0)
+        named.add(match.group(0))
+        return narrative(found[0], style, found[1])
+
+    return _LABEL.sub(single, _LABEL_GROUP.sub(group, text)), named
