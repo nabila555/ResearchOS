@@ -25,6 +25,7 @@ from app.models.library import (
 )
 from app.models.project import Project, ProjectStatus, project_documents
 from app.models.report import Report
+from app.models.review import LiteratureReview, ReviewTheme, ReviewThemeItem
 
 __all__ = [
     "Activity",
@@ -48,7 +49,10 @@ __all__ = [
     "DocumentType",
     "Project",
     "ProjectStatus",
+    "LiteratureReview",
     "Report",
+    "ReviewTheme",
+    "ReviewThemeItem",
     "Tag",
     "collection_documents",
     "document_tags",

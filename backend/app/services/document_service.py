@@ -106,6 +106,10 @@ def to_detail(db: Session, doc: Document) -> DocumentDetail:
         abstract=doc.abstract,
         keywords=doc.keywords or [],
         doi=doc.doi,
+        volume=doc.volume,
+        issue=doc.issue,
+        pages=doc.pages,
+        publisher=doc.publisher,
         original_filename=doc.original_filename,
         file_size=doc.file_size,
         mime_type=doc.mime_type,
@@ -407,6 +411,9 @@ def update_document(db: Session, document_id: int, data: DocumentUpdate) -> Docu
         doc.doi = (find_doi(doi) or doi.lower()) if doi else None
     if "abstract" in fields:
         doc.abstract = data.abstract or None
+    for name in ("volume", "issue", "pages", "publisher"):
+        if name in fields:
+            setattr(doc, name, getattr(data, name) or None)
     if "keywords" in fields:
         doc.keywords = list(dict.fromkeys(k.strip() for k in data.keywords or [] if k.strip()))
     if "note_body" in fields:

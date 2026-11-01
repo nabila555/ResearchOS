@@ -14,6 +14,7 @@ class AnalysisKind(enum.StrEnum):
     COMPARISON = "comparison"
     GAP_ANALYSIS = "gap_analysis"
     DETECTIVE = "detective"
+    THEME_SUMMARY = "theme_summary"  # literature review theme synthesis
 
 
 class AnalysisStatus(enum.StrEnum):

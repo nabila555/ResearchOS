@@ -1,6 +1,6 @@
 # Development status
 
-_Last updated: 2026-11-02 · version 0.4.0_
+_Last updated: 2026-11-02 · version 0.5.0_
 
 | Phase | Status |
 |---|---|
@@ -8,8 +8,85 @@ _Last updated: 2026-11-02 · version 0.4.0_
 | 2. Research Library | ✅ complete (0.2.0) |
 | 3. AI Assistant | ✅ complete (0.3.0) |
 | 4. Research Intelligence | ✅ complete (0.4.0) |
-| 5. Knowledge Management | ⏳ next |
-| 6 | planned (see [docs/ROADMAP.md](docs/ROADMAP.md)) |
+| 5. Knowledge Management | ✅ complete (0.5.0) |
+| 6. Export & Polish | ⏳ next |
+
+## Phase 5: Knowledge Management ✅
+
+### Done
+
+**Citation Manager** (`backend/app/citations.py`, deterministic, no AI)
+- APA 7, MLA 9, Chicago author-date (17th) and IEEE for journal articles, web pages and other
+  documents. Name parsing handles "Family, Given", particles (van der, de…) and hyphenated
+  initials (J.-P.); APA's 20-author rule, MLA/Chicago/IEEE et al. rules; italics carried as
+  structured parts (copy pastes as rich text into Word or Docs).
+- Missing elements are **left out and reported** (authors, year, volume, pages, DOI/URL); APA
+  "n.d." where the style defines it. Titles are used as stored (no automatic re-casing).
+- New editable citation fields on documents: volume, issue, pages, publisher (migration `0005`).
+- In-text (parenthetical and narrative) citations; alphabetical bibliographies, or numbered in
+  citation order for IEEE.
+- Export: BibTeX (escaped, unique keys, `--` page ranges, `@online` with `urldate`), RIS, Markdown
+  and plain text. The page offers copy-one, copy-bibliography, filter and per-collection scope.
+
+**Knowledge Graph** (React Flow + d3-force layout)
+- Nodes: papers, authors, topics (tags), concepts (keywords shared by ≥2 papers), collections.
+  Edges come only from real data: authorship, tags, keywords, collections, **semantic similarity**
+  (mean chunk embeddings, adjustable threshold) and **shared references**.
+- Per-paper expansion adds method, research-question and finding nodes from *verified* profile
+  statements only, each linking to its page and quote.
+- Layer toggles, collection scope, highlight search, neighbourhood focus, a side panel listing
+  connections with edge reasons, minimap, and light/dark mode.
+
+**Literature Review workspace**
+- Reviews (title, research question, introduction, citation style) → themes (name, description,
+  order) → sources (order, per-source note).
+- **Suggest themes**: groups papers by embedding similarity (no text generation), names groups
+  from shared keywords/tags, and reports unindexed papers.
+- **AI theme synthesis** (background job over verified profile statements): every sentence must
+  cite papers *in that theme*. Sentences without valid support are flagged; agreements and
+  disagreements need ≥2 papers. Re-running after changing a theme's papers shows "stale".
+- **Export to Markdown**: introduction, themes with cited synthesis (narrative citations
+  replace any "P1" labels the model wrote; no duplicate parenthetical), supported agreements and
+  disagreements, sources per theme with notes, and a formatted reference list in the chosen style.
+- An outline view links to each section.
+
+**Tests**: backend **135** (23 new: every style for a journal article, missing data, web,
+report, in-text and narrative citations, bibliography order, BibTeX escaping and keys, RIS,
+graph layers, keyword normalisation, similarity edges, scope, verified-only detail nodes, review
+CRUD, reordering, duplicates, empty-theme guard, synthesis verification, stale detection, export
+with citations in APA and IEEE, label replacement, theme suggestions). Frontend **36** (citation
+rendering, rich-text copy with HTML escaping and plain-text fallback, graph layout). `next build`
+passes.
+
+**Real end-to-end check** (`llama3.1:8b`):
+- **Theme synthesis** of 2 papers took 95 s (profiles were cached). All 4 synthesis sentences were
+  correctly attributed. The model's 4 one-paper "agreements/disagreements" were correctly flagged
+  and left out of the export.
+- **Review export** produced readable prose with proper APA in-text citations and a reference list.
+- **Browser:** the citation page (italics, style switching, missing-field hints, export links), the
+  graph (edges, similarity link, side panel, expansion to 5 verified detail nodes), and the review
+  page (outline, synthesis, flagged claims).
+
+Bugs found and fixed during this phase:
+- Stale review state was returned after editing themes.
+- IEEE dropped the DOI for papers without a venue.
+- "P1/P2" labels leaked into exported prose.
+- Double citations appeared in sentences that already named a paper.
+- Wide detail nodes overlapped in the graph.
+
+### Known limitations
+- Citation formatting covers the common cases (journal article, web page, report-like document);
+  books, chapters, conference papers and theses are formatted as generic documents. Title casing
+  is not converted.
+- A paper whose journal is unknown is cited as a generic document. Add the journal under
+  *Edit details* to get the article format.
+- Graph layout is computed in the browser; very large libraries (>300 papers) are capped.
+- Shared-reference edges need identical reference strings (after normalisation); differently
+  formatted references to the same work are not matched.
+- Synthesis verification checks which papers a sentence cites, not whether the sentence is a
+  faithful summary of them.
+- The two fictional test papers now also have a review (“Sleep, screens and memory in
+  students”) and journal details on one of them; delete them when you no longer need them.
 
 ## Phase 4: Research Intelligence ✅
 
@@ -187,8 +264,5 @@ filters, facets; library, document page, and Ctrl+K quick search. See git histor
 ## Phase 1: Foundation ✅
 FastAPI + SQLite backend, Next.js shell, theme, dashboard, projects, settings.
 
-## Phase 5: Knowledge Management ⏳ next
-- [ ] Knowledge graph (React Flow) · Literature review workspace · Citation manager (APA/MLA/Chicago/IEEE, BibTeX)
-
-## Phase 6: Export & Polish
+## Phase 6: Export & Polish ⏳ next
 - [ ] Reports + Markdown export · PDF export · Performance · E2E tests · Docs

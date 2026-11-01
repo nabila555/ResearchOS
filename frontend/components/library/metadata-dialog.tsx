@@ -38,6 +38,10 @@ function MetadataForm({ doc, onDone }: { doc: DocumentDetail; onDone: () => void
   const [year, setYear] = useState(doc.publication_year?.toString() ?? "");
   const [venue, setVenue] = useState(doc.venue ?? "");
   const [doi, setDoi] = useState(doc.doi ?? "");
+  const [volume, setVolume] = useState(doc.volume ?? "");
+  const [issue, setIssue] = useState(doc.issue ?? "");
+  const [pages, setPages] = useState(doc.pages ?? "");
+  const [publisher, setPublisher] = useState(doc.publisher ?? "");
   const [keywords, setKeywords] = useState(doc.keywords.join(", "));
   const [abstract, setAbstract] = useState(doc.abstract ?? "");
   const save = useLibraryMutation((input: DocumentUpdate) => documentService.update(doc.id, input));
@@ -50,6 +54,10 @@ function MetadataForm({ doc, onDone }: { doc: DocumentDetail; onDone: () => void
       publication_year: year ? Number(year) : null,
       venue: venue.trim() || null,
       doi: doi.trim() || null,
+      volume: volume.trim() || null,
+      issue: issue.trim() || null,
+      pages: pages.trim() || null,
+      publisher: publisher.trim() || null,
       keywords: keywords.split(/[,;]/).map((k) => k.trim()).filter(Boolean),
       abstract: abstract.trim() || null,
     };
@@ -100,6 +108,27 @@ function MetadataForm({ doc, onDone }: { doc: DocumentDetail; onDone: () => void
           <Input id="meta-keywords" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
         </div>
       </div>
+      <fieldset>
+        <legend className="mb-1.5 text-[13px] font-medium">Citation details <span className="font-normal text-subtle-foreground">(used by the Citation Manager)</span></legend>
+        <div className="grid gap-3 sm:grid-cols-4">
+          <div>
+            <Label htmlFor="meta-volume">Volume</Label>
+            <Input id="meta-volume" value={volume} onChange={(e) => setVolume(e.target.value)} maxLength={50} />
+          </div>
+          <div>
+            <Label htmlFor="meta-issue">Issue</Label>
+            <Input id="meta-issue" value={issue} onChange={(e) => setIssue(e.target.value)} maxLength={50} />
+          </div>
+          <div>
+            <Label htmlFor="meta-pages">Pages</Label>
+            <Input id="meta-pages" value={pages} onChange={(e) => setPages(e.target.value)} placeholder="e.g. 101–115" maxLength={50} />
+          </div>
+          <div>
+            <Label htmlFor="meta-publisher">Publisher</Label>
+            <Input id="meta-publisher" value={publisher} onChange={(e) => setPublisher(e.target.value)} maxLength={300} />
+          </div>
+        </div>
+      </fieldset>
       <div>
         <Label htmlFor="meta-abstract">Abstract</Label>
         <Textarea id="meta-abstract" rows={5} value={abstract} onChange={(e) => setAbstract(e.target.value)} />

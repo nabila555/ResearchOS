@@ -9,6 +9,7 @@ import type {
   ChatScope,
   ChatSession,
   ChatSessionDetail,
+  CitationStyle,
   ChunkPage,
   Collection,
   DashboardSummary,
@@ -16,11 +17,15 @@ import type {
   DocumentFilters,
   DocumentPage,
   DocumentUpdate,
+  FormattedCitation,
+  GraphData,
   LibraryFacets,
+  LiteratureReview,
   PaperProfile,
   Project,
   ProjectInput,
   ProjectStatus,
+  ReviewSummary,
   SystemStatus,
   Tag,
 } from "@/types/api";
@@ -136,4 +141,42 @@ export const analysisService = {
   remove: (id: number) => apiFetch<void>(`/api/analyses/${id}`, { method: "DELETE" }),
   profile: (documentId: number) => apiFetch<PaperProfile>(`/api/documents/${documentId}/profile`),
   reportDownloadUrl: (reportId: number) => `${API_BASE_URL}/api/reports/${reportId}/download`,
+};
+
+export const citationService = {
+  styles: () => apiFetch<Record<CitationStyle, string>>("/api/citations/styles"),
+  list: (style: CitationStyle, documentIds?: number[]) =>
+    apiFetch<FormattedCitation[]>(`/api/citations${toQueryString({ style, document_id: documentIds })}`),
+  exportUrl: (format: "bibtex" | "ris" | "markdown" | "text", style: CitationStyle, documentIds?: number[]) =>
+    `${API_BASE_URL}/api/citations/export${toQueryString({ format, style, document_id: documentIds })}`,
+};
+
+export const graphService = {
+  get: (params: { include?: string[]; collection_id?: number; project_id?: number; similarity?: number }) =>
+    apiFetch<GraphData>(`/api/graph${toQueryString(params)}`),
+  paper: (documentId: number) => apiFetch<GraphData>(`/api/graph/papers/${documentId}`),
+};
+
+export const reviewService = {
+  list: () => apiFetch<ReviewSummary[]>("/api/reviews"),
+  get: (id: number) => apiFetch<LiteratureReview>(`/api/reviews/${id}`),
+  create: (input: { title: string; research_question?: string | null; project_id?: number | null }) =>
+    apiFetch<LiteratureReview>("/api/reviews", json("POST", input)),
+  update: (id: number, input: Partial<Pick<LiteratureReview, "title" | "research_question" | "introduction" | "citation_style">>) =>
+    apiFetch<LiteratureReview>(`/api/reviews/${id}`, json("PATCH", input)),
+  remove: (id: number) => apiFetch<void>(`/api/reviews/${id}`, { method: "DELETE" }),
+  addTheme: (id: number, input: { name: string; description?: string | null; document_ids?: number[] }) =>
+    apiFetch<LiteratureReview>(`/api/reviews/${id}/themes`, json("POST", input)),
+  updateTheme: (themeId: number, input: { name?: string; description?: string | null; position?: number }) =>
+    apiFetch<LiteratureReview>(`/api/reviews/themes/${themeId}`, json("PATCH", input)),
+  removeTheme: (themeId: number) => apiFetch<void>(`/api/reviews/themes/${themeId}`, { method: "DELETE" }),
+  setItems: (themeId: number, items: { document_id: number; note?: string | null }[]) =>
+    apiFetch<LiteratureReview>(`/api/reviews/themes/${themeId}/items`, json("PUT", { items })),
+  suggest: (id: number, documentIds: number[]) =>
+    apiFetch<{ groups: { name: string; document_ids: number[] }[]; unindexed_document_ids: number[]; method: string }>(
+      `/api/reviews/${id}/suggest-themes`,
+      json("POST", { document_ids: documentIds }),
+    ),
+  summarise: (themeId: number) => apiFetch<LiteratureReview>(`/api/reviews/themes/${themeId}/summary`, { method: "POST" }),
+  exportUrl: (id: number, style?: CitationStyle) => `${API_BASE_URL}/api/reviews/${id}/export${toQueryString({ style })}`,
 };

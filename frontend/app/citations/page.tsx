@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { PlannedFeature } from "@/components/layout/planned-feature";
+import { CitationsView } from "@/components/knowledge/citations-view";
 
 export const metadata: Metadata = { title: "Citation Manager" };
 
-export default function Page() {
-  return <PlannedFeature href="/citations" />;
+export default function CitationsPage() {
+  return <CitationsView />;
 }

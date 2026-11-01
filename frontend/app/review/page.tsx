@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { PlannedFeature } from "@/components/layout/planned-feature";
+import { ReviewView } from "@/components/knowledge/review-view";
 
 export const metadata: Metadata = { title: "Literature Review" };
 
-export default function Page() {
-  return <PlannedFeature href="/review" />;
+export default function ReviewPage() {
+  // The open review lives in the URL (?id=N), read with useSearchParams.
+  return (
+    <Suspense>
+      <ReviewView />
+    </Suspense>
+  );
 }

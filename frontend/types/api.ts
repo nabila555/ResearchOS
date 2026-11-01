@@ -137,6 +137,10 @@ export interface DocumentDetail extends DocumentSummary {
   abstract: string | null;
   keywords: string[];
   doi: string | null;
+  volume: string | null;
+  issue: string | null;
+  pages: string | null;
+  publisher: string | null;
   original_filename: string | null;
   file_size: number | null;
   mime_type: string | null;
@@ -188,6 +192,10 @@ export interface DocumentUpdate {
   publication_year?: number | null;
   venue?: string | null;
   doi?: string | null;
+  volume?: string | null;
+  issue?: string | null;
+  pages?: string | null;
+  publisher?: string | null;
   abstract?: string | null;
   keywords?: string[];
   note_body?: string;
@@ -425,4 +433,112 @@ export interface AnalysisCreate {
   collection_id?: number;
   project_id?: number;
   focus?: string;
+}
+
+// --- Knowledge management ---------------------------------------------------------
+
+export type CitationStyle = "apa" | "mla" | "chicago" | "ieee";
+
+export interface FormattedCitation {
+  document_id: number;
+  number: number | null;
+  text: string;
+  markdown: string;
+  parts: { text: string; italic: boolean }[];
+  missing: string[];
+  kind: "article" | "web" | "document";
+}
+
+export type GraphNodeType =
+  | "paper"
+  | "author"
+  | "topic"
+  | "keyword"
+  | "collection"
+  | "method"
+  | "finding"
+  | "question";
+
+export interface GraphNode {
+  id: string;
+  type: GraphNodeType;
+  label: string;
+  data: {
+    degree: number;
+    document_id?: number;
+    year?: number | null;
+    page?: number | null;
+    quote?: string;
+    papers?: number;
+  };
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  weight: number;
+  label: string | null;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  stats: Partial<Record<GraphNodeType, number>>;
+  has_profile?: boolean;
+}
+
+export interface ClaimRef {
+  text: string;
+  supported: boolean;
+  papers: { label: string; document_id: number }[];
+  notes: string[];
+}
+
+export interface ThemeSummaryResult {
+  theme: string;
+  papers: { label: string; document_id: number; title: string }[];
+  synthesis: ClaimRef[];
+  agreements: ClaimRef[];
+  disagreements: ClaimRef[];
+}
+
+export interface ReviewTheme {
+  id: number;
+  name: string;
+  description: string | null;
+  position: number;
+  items: { document_id: number; note: string | null; title: string; authors: string[]; year: number | null }[];
+  summary: {
+    analysis_id: number;
+    status: AnalysisStatus;
+    progress: number;
+    progress_message: string | null;
+    error: string | null;
+    model: string;
+    result: ThemeSummaryResult | null;
+    stale: boolean;
+    updated_at: string;
+  } | null;
+}
+
+export interface LiteratureReview {
+  id: number;
+  title: string;
+  research_question: string | null;
+  introduction: string | null;
+  project_id: number | null;
+  citation_style: CitationStyle;
+  themes: ReviewTheme[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewSummary {
+  id: number;
+  title: string;
+  research_question: string | null;
+  theme_count: number;
+  updated_at: string;
 }

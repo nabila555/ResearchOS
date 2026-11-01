@@ -23,7 +23,7 @@ export interface NavItem {
 }
 
 /** The phase whose features are fully implemented. */
-export const CURRENT_PHASE = 4;
+export const CURRENT_PHASE = 5;
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -72,10 +72,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Network,
     phase: 5,
     summary: "Explore relationships between papers, authors, concepts, and methods.",
-    planned: [
-      "Interactive React Flow graph of papers, authors, topics, methods, and findings",
-      "Filter by node type, focus on a node’s neighbourhood",
-    ],
+    planned: [],
   },
   {
     href: "/review",
@@ -83,11 +80,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BookOpen,
     phase: 5,
     summary: "Organise sources by theme and draft a cited literature review.",
-    planned: [
-      "Themes and grouped studies, thematic summaries, disagreements",
-      "Structured outlines; every claim linked to sources",
-      "Export to Markdown",
-    ],
+    planned: [],
   },
   {
     href: "/citations",
@@ -95,11 +88,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Quote,
     phase: 5,
     summary: "Format references and export bibliographies.",
-    planned: [
-      "APA 7, MLA, Chicago, and IEEE formatting",
-      "Copy citations, generate bibliographies, export BibTeX",
-      "Missing fields are flagged, never invented",
-    ],
+    planned: [],
   },
   {
     href: "/projects",

@@ -113,13 +113,15 @@ no number absent from the excerpt. Failing statements are kept but flagged *unve
 reason, never silently shown as fact. Gap-finder labels (literature vs. hypothesis) are enforced
 after generation.
 
-Planned tables (added with Alembic migrations in their phase):
+Implemented in Phase 5 (migration `0005`): `literature_reviews`, `review_themes`,
+`review_theme_items` (ordered sources with notes), and `documents.volume/issue/pages/publisher`.
+Theme syntheses are `analyses` of kind `theme_summary`. The knowledge graph is computed on request
+from existing tables (no graph table): metadata links, mean chunk embeddings, normalised
+reference strings, and verified profile statements. Citations are formatted on the fly from
+document metadata (`app/citations.py`).
 
-| Phase | Table | Purpose |
-|---|---|---|
-| 5 | `concepts`, `document_concepts`, `relations` | Knowledge-graph nodes and typed edges with evidence chunk ids |
-| 5 | `review_themes`, `review_items` | Literature-review workspace |
-| 5 | `references` (CSL-JSON fields + `missing_fields[]`) | Citation manager; missing fields are flagged, never invented |
+All tables planned for Phases 1-5 now exist. Phase 6 (export & polish) is not expected to need
+schema changes beyond optional report settings.
 
 Migrations: Alembic, applied automatically at startup (`app/core/migrations.py`).
 A database created by Phase 1's `create_all` is stamped at `0001` and upgraded.

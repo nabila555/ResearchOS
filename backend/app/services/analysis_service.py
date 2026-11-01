@@ -20,7 +20,7 @@ from app.models.analysis import Analysis, AnalysisKind, AnalysisStatus, PaperPro
 from app.models.library import Chunk, Document, DocumentAuthor, collection_documents
 from app.models.project import project_documents
 from app.models.report import Report
-from app.research_analysis import detective, gaps
+from app.research_analysis import detective, gaps, synthesis
 from app.research_analysis.evidence import chunk_signature
 from app.research_analysis.markdown import comparison_markdown, detective_markdown, gaps_markdown
 from app.research_analysis.profile import FIELDS, STEPS, build_profile
@@ -34,6 +34,7 @@ LIMITS = {
     AnalysisKind.DETECTIVE: (1, 1),
     AnalysisKind.COMPARISON: (2, 6),
     AnalysisKind.GAP_ANALYSIS: (2, 12),
+    AnalysisKind.THEME_SUMMARY: (1, 15),
 }
 REPORT_TYPES = {
     AnalysisKind.COMPARISON: "comparison",
@@ -116,6 +117,7 @@ def create_analysis(
             if len(document_ids) == 2
             else f"Comparison of {len(document_ids)} papers"
         ),
+        AnalysisKind.THEME_SUMMARY: f"Theme summary: {(params or {}).get('theme_name', 'theme')}",
         AnalysisKind.GAP_ANALYSIS: (params or {}).get("label")
         or f"Research gaps across {len(document_ids)} papers",
     }
@@ -267,9 +269,8 @@ def _run(runner: _Runner) -> tuple[dict[str, Any], str | None]:
         result["document"] = {"id": docs[0].id, "title": docs[0].title}
         return result, detective_markdown(analysis.title, result, model)
 
-    runner.total_steps = len(STEPS) * len(docs) + (
-        1 if analysis.kind == AnalysisKind.GAP_ANALYSIS else 0
-    )
+    synthesis_step = analysis.kind in (AnalysisKind.GAP_ANALYSIS, AnalysisKind.THEME_SUMMARY)
+    runner.total_steps = len(STEPS) * len(docs) + (1 if synthesis_step else 0)
     profiles = {doc.id: runner.ensure_profile(doc) for doc in docs}
 
     if analysis.kind == AnalysisKind.COMPARISON:
@@ -288,11 +289,21 @@ def _run(runner: _Runner) -> tuple[dict[str, Any], str | None]:
         }
         return result, comparison_markdown(analysis.title, result, model)
 
-    runner.step(f"Looking for gaps across {len(docs)} papers")
     digests = [
         gaps.PaperDigest(f"P{i + 1}", d.id, d.title, d.publication_year, profiles[d.id])
         for i, d in enumerate(docs)
     ]
+    if analysis.kind == AnalysisKind.THEME_SUMMARY:
+        runner.step(f"Writing a synthesis of {len(docs)} papers")
+        result = synthesis.summarise_theme(
+            analysis.params.get("theme_name", "Theme"),
+            analysis.params.get("research_question"),
+            digests,
+            runner.provider,
+        )
+        return result, None
+
+    runner.step(f"Looking for gaps across {len(docs)} papers")
     result = gaps.find_gaps(digests, runner.provider, analysis.params.get("focus"))
     return result, gaps_markdown(analysis.title, result, model)
 

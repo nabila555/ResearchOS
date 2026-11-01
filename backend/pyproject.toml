@@ -1,6 +1,6 @@
 [project]
 name = "researchos-backend"
-version = "0.4.0"
+version = "0.5.0"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
@@ -14,3 +14,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests compare against long literal citation strings and fixture text.
+"tests/*" = ["E501"]

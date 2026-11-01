@@ -90,6 +90,11 @@ class Document(TimestampMixin, Base):
     abstract: Mapped[str | None] = mapped_column(Text)
     publication_year: Mapped[int | None] = mapped_column(Integer, index=True)
     venue: Mapped[str | None] = mapped_column(String(500))
+    # Citation details (entered by the user or found in metadata; never guessed).
+    volume: Mapped[str | None] = mapped_column(String(50))
+    issue: Mapped[str | None] = mapped_column(String(50))
+    pages: Mapped[str | None] = mapped_column(String(50))
+    publisher: Mapped[str | None] = mapped_column(String(300))
     doi: Mapped[str | None] = mapped_column(String(255), index=True)
     keywords: Mapped[list[str]] = mapped_column(JSON, default=list)
     # Raw reference strings as found in the document; parsed later, never invented.

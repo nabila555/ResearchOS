@@ -3,8 +3,8 @@
 A local-first, open-source **research operating system**: collect, organise, analyse,
 and connect research material with AI that runs on your own machine and cites its sources.
 
-> **Status:** Phases 1–4 complete: foundation, research library, AI assistant, and research
-> intelligence (paper profiles, comparison, gap finder, paper detective). See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+> **Status:** Phases 1–5 complete. Every sidebar section works: library, AI assistant,
+> research intelligence, knowledge graph, literature review, and citation manager. See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 > and the [roadmap](docs/ROADMAP.md). Sections not built yet are labelled with their
 > phase in the sidebar and explain what's planned; they contain no non-functional controls.
 
@@ -16,6 +16,10 @@ and connect research material with AI that runs on your own machine and cites it
 - **Research intelligence:** evidence-linked paper profiles, side-by-side comparison tables, a
   research gap finder that separates literature-supported findings from AI hypotheses, and a
   Paper Detective for critical reading. Every statement is checked against the quoted page.
+- **Knowledge management:** an interactive knowledge graph (authors, topics, concepts,
+  similarity, shared references, verified findings), a literature review workspace with
+  cited AI theme syntheses and Markdown export, and a citation manager (APA 7, MLA 9, Chicago,
+  IEEE; BibTeX/RIS export) that never invents missing details.
 - **Honest AI assistant:** answers only from your sources, cites document and page for every
   claim, checks each citation against the passages it was given, and says so when the evidence
   is insufficient. Runs locally on Ollama; the Claude API is optional and needs your consent.
@@ -159,6 +163,9 @@ researchos/
 | Comparison / gap analysis is “Queued” for a long time | Analyses run one at a time in the background; each new paper takes about 3 minutes to profile on a CPU. Progress shows on the page. |
 | Analysis **failed: incomplete JSON** | The model hit its output limit. Retry, or use a stronger model (`OLLAMA_CHAT_MODEL`). |
 | Many fields **“Not reported”** for a long paper | Only the most relevant excerpts are read per pass; raise `ANALYSIS_EXCERPT_CHARS` (and `OLLAMA_NUM_CTX`) if you have the RAM. |
+| Citation shows **Missing: volume / pages / doi** | Open the document → *Edit details* → Citation details. Missing values are never guessed. |
+| Paper cited as a generic document instead of a journal article | Add the journal name (venue) in *Edit details*. |
+| Knowledge graph has no “similar” links | Papers must be indexed (Settings → AI assistant), or lower the similarity threshold. |
 | Model shows **not installed** | `ollama pull <model>` with the exact name shown, or change `OLLAMA_CHAT_MODEL` / `OLLAMA_EMBED_MODEL`. |
 | Upload fails with **“does not look like a valid PDF”** | The file's contents don't match its extension (e.g. a renamed file). Re-export it as a real PDF. |
 | **“The PDF is password-protected”** | Remove the password in your PDF reader (Print → Save as PDF) and import again. |

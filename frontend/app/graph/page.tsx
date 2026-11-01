@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { PlannedFeature } from "@/components/layout/planned-feature";
+import { GraphView } from "@/components/knowledge/graph-view";
 
 export const metadata: Metadata = { title: "Knowledge Graph" };
 
-export default function Page() {
-  return <PlannedFeature href="/graph" />;
+export default function GraphPage() {
+  return <GraphView />;
 }

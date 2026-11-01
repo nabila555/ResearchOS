@@ -48,6 +48,10 @@ class DocumentDetail(DocumentSummary):
     abstract: str | None
     keywords: list[str]
     doi: str | None
+    volume: str | None
+    issue: str | None
+    pages: str | None
+    publisher: str | None
     original_filename: str | None
     file_size: int | None
     mime_type: str | None
@@ -101,11 +105,17 @@ class DocumentUpdate(BaseModel):
     publication_year: int | None = Field(default=None, ge=1000, le=2100)
     venue: str | None = Field(default=None, max_length=500)
     doi: str | None = Field(default=None, max_length=255)
+    volume: str | None = Field(default=None, max_length=50)
+    issue: str | None = Field(default=None, max_length=50)
+    pages: str | None = Field(default=None, max_length=50)
+    publisher: str | None = Field(default=None, max_length=300)
     abstract: str | None = Field(default=None, max_length=20_000)
     keywords: list[str] | None = Field(default=None, max_length=50)
     note_body: str | None = Field(default=None, max_length=500_000)
 
-    _strip_fields = field_validator("title", "venue", "doi", "abstract", mode="before")(_strip)
+    _strip_fields = field_validator(
+        "title", "venue", "doi", "abstract", "volume", "issue", "pages", "publisher", mode="before"
+    )(_strip)
 
 
 class NameList(BaseModel):
