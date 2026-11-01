@@ -10,6 +10,7 @@ from app.models.ai import (
     IndexStatus,
     JobStatus,
 )
+from app.models.analysis import Analysis, AnalysisKind, AnalysisStatus, PaperProfile
 from app.models.library import (
     Author,
     Chunk,
@@ -27,6 +28,10 @@ from app.models.report import Report
 
 __all__ = [
     "Activity",
+    "Analysis",
+    "AnalysisKind",
+    "AnalysisStatus",
+    "PaperProfile",
     "AppSetting",
     "ChatMessage",
     "ChatSession",

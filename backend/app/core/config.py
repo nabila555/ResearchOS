@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     retrieval_min_similarity: float = Field(default=0.45, ge=0.0, le=1.0)
     embed_batch_size: int = Field(default=16, ge=1, le=256)
     chat_history_messages: int = Field(default=6, ge=0, le=40)
+    # Characters of paper text sent per extraction step (fits an 8k-token context).
+    analysis_excerpt_chars: int = Field(default=7000, ge=1500)
     run_background_worker: bool = True
 
     @field_validator("data_dir", mode="after")

@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { PlannedFeature } from "@/components/layout/planned-feature";
+import { CompareView } from "@/components/analysis/compare-view";
 
 export const metadata: Metadata = { title: "Paper Comparison" };
 
 export default function Page() {
-  return <PlannedFeature href="/compare" />;
+  // The selected run lives in the URL (?id=N), read with useSearchParams.
+  return (
+    <Suspense>
+      <CompareView />
+    </Suspense>
+  );
 }

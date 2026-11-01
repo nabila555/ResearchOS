@@ -102,11 +102,21 @@ blob), `index_jobs` (durable embedding queue), `chat_sessions` (title, scope JSO
 `grounded`, notes), `app_settings` (chat provider, cloud consent), and
 `documents.ai_index_status` / `ai_index_error`.
 
+Implemented in Phase 4 (migration `0004`): `paper_profiles` (document_id → evidence-linked
+fields JSON, chunk content hash for staleness) and `analyses` (kind, status, progress, document
+ids, params, result JSON, provider/model, linked report).
+
+**Evidence verification (Phase 4).** Model output is generated with JSON-schema constrained
+decoding and then checked in code. Each statement must reference a provided excerpt, include a
+quote that appears in that excerpt (normalised; ≥85% word overlap for near-verbatim), and contain
+no number absent from the excerpt. Failing statements are kept but flagged *unverified* with the
+reason, never silently shown as fact. Gap-finder labels (literature vs. hypothesis) are enforced
+after generation.
+
 Planned tables (added with Alembic migrations in their phase):
 
 | Phase | Table | Purpose |
 |---|---|---|
-| 4 | `analyses` (type, input doc ids, structured JSON result, model, created_at) | Cached comparison / gap / detective results |
 | 5 | `concepts`, `document_concepts`, `relations` | Knowledge-graph nodes and typed edges with evidence chunk ids |
 | 5 | `review_themes`, `review_items` | Literature-review workspace |
 | 5 | `references` (CSL-JSON fields + `missing_fields[]`) | Citation manager; missing fields are flagged, never invented |

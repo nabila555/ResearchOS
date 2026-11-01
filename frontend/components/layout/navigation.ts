@@ -23,7 +23,7 @@ export interface NavItem {
 }
 
 /** The phase whose features are fully implemented. */
-export const CURRENT_PHASE = 3;
+export const CURRENT_PHASE = 4;
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -56,11 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ScanSearch,
     phase: 4,
     summary: "Find underexplored areas, contradictions, and open questions in a collection.",
-    planned: [
-      "Underexplored areas, contradictory findings, missing perspectives",
-      "Methodological limitations and candidate research questions",
-      "AI hypotheses clearly separated from literature-supported conclusions",
-    ],
+    planned: [],
   },
   {
     href: "/compare",
@@ -68,11 +64,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: GitCompareArrows,
     phase: 4,
     summary: "Side-by-side structured comparison of selected papers.",
-    planned: [
-      "Objectives, questions, methods, datasets, sample sizes, findings, limitations",
-      "Each cell linked to the supporting passage, or marked “not reported”",
-      "Research Paper Detective: per-paper analytical observations",
-    ],
+    planned: [],
   },
   {
     href: "/graph",

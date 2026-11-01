@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Iterator
+from typing import Any
 
 import httpx
 
@@ -120,6 +121,45 @@ class OllamaChatProvider(_OllamaBase):
                 "The local model took too long to respond. Try a shorter question, a smaller "
                 "model, or raise OLLAMA_GENERATION_TIMEOUT_SECONDS."
             ) from exc
+
+    def generate_json(
+        self, system: str, prompt: str, schema: dict[str, Any], *, max_tokens: int
+    ) -> dict[str, Any]:
+        payload = {
+            "model": self.model,
+            "stream": False,
+            # Ollama turns the JSON schema into a grammar, so the output always parses.
+            "format": schema,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "options": {"temperature": 0.0, "num_ctx": self._num_ctx, "num_predict": max_tokens},
+        }
+        try:
+            with self._client() as client:
+                response = client.post(f"{self.base_url}/api/chat", json=payload)
+        except httpx.ConnectError as exc:
+            raise ProviderUnavailableError(
+                "Ollama is not running. Start the Ollama app and try again."
+            ) from exc
+        except httpx.TimeoutException as exc:
+            raise ProviderError(
+                "The local model took too long. Raise OLLAMA_GENERATION_TIMEOUT_SECONDS or use "
+                "a smaller model."
+            ) from exc
+        _raise_for_ollama(response, self.model)
+        content = response.json().get("message", {}).get("content", "")
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as exc:
+            # Happens when generation stops at num_predict mid-object.
+            raise ProviderError(
+                "The local model returned incomplete JSON (output too long)."
+            ) from exc
+        if not isinstance(data, dict):
+            raise ProviderError("The local model returned an unexpected JSON value.")
+        return data
 
 
 class OllamaEmbeddingProvider(_OllamaBase):

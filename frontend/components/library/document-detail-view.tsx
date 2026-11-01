@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { DetectiveCard, PaperProfileCard } from "@/components/analysis/document-intelligence";
 import { PageContainer } from "@/components/layout/page-header";
 import { MetadataDialog } from "@/components/library/metadata-dialog";
 import { DOC_TYPE_LABELS, DocTypeIcon, formatBytes, formatPages } from "@/components/library/shared";
@@ -177,6 +178,8 @@ function DocumentDetailContent({ doc }: { doc: DocumentDetail }) {
               ))}
             </div>
           ) : null}
+          {doc.chunk_count > 0 ? <PaperProfileCard documentId={doc.id} /> : null}
+          {doc.chunk_count > 0 && doc.doc_type !== "note" ? <DetectiveCard documentId={doc.id} /> : null}
           {doc.doc_type !== "note" ? <ExtractedText doc={doc} /> : null}
           {doc.reference_list.length ? <References references={doc.reference_list} /> : null}
         </div>

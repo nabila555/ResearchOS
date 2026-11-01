@@ -94,7 +94,7 @@ export function SidebarContent({
       </nav>
 
       <div className="flex items-center justify-between border-t border-border px-4 py-3">
-        <span className="text-[11px] text-subtle-foreground">Local-first · v0.3</span>
+        <span className="text-[11px] text-subtle-foreground">Local-first · v0.4</span>
         <ThemeToggle />
       </div>
     </div>

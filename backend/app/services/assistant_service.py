@@ -223,6 +223,11 @@ def prepare_question(
     question = content.strip()
     if not question:
         raise InvalidRequestError("The question is empty.")
+    return session, resolve_chat_provider(db, settings, ai)
+
+
+def resolve_chat_provider(db: Session, settings: Settings, ai: AIServices) -> str:
+    """The provider to use for generation, after checking it is configured and allowed."""
     ai_settings = settings_service.get_ai_settings(db, settings)
     provider_name = ai_settings.chat_provider
     if provider_name not in ai.available_chat_providers():
@@ -235,7 +240,7 @@ def prepare_question(
             "Using a cloud AI provider sends your question and matching passages from your "
             "documents to that service. Enable this explicitly in Settings first."
         )
-    return session, provider_name
+    return provider_name
 
 
 def answer_stream(

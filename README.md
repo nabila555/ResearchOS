@@ -3,7 +3,8 @@
 A local-first, open-source **research operating system**: collect, organise, analyse,
 and connect research material with AI that runs on your own machine and cites its sources.
 
-> **Status:** Phases 1–3 complete: foundation, research library, and the AI assistant. See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
+> **Status:** Phases 1–4 complete: foundation, research library, AI assistant, and research
+> intelligence (paper profiles, comparison, gap finder, paper detective). See [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)
 > and the [roadmap](docs/ROADMAP.md). Sections not built yet are labelled with their
 > phase in the sidebar and explain what's planned; they contain no non-functional controls.
 
@@ -12,6 +13,9 @@ and connect research material with AI that runs on your own machine and cites it
 - **Research library:** import PDFs, Word, Markdown, text, web articles and notes;
   automatic metadata (verify-before-trust), collections, tags, filters, and full-text
   search with page-level snippets. Press **Ctrl/⌘ K** to search from anywhere.
+- **Research intelligence:** evidence-linked paper profiles, side-by-side comparison tables, a
+  research gap finder that separates literature-supported findings from AI hypotheses, and a
+  Paper Detective for critical reading. Every statement is checked against the quoted page.
 - **Honest AI assistant:** answers only from your sources, cites document and page for every
   claim, checks each citation against the passages it was given, and says so when the evidence
   is insufficient. Runs locally on Ollama; the Claude API is optional and needs your consent.
@@ -152,6 +156,9 @@ researchos/
 | Documents stay **“Indexing…”** | Ollama is down or `nomic-embed-text` isn't pulled; indexing resumes on its own once it's available. Check Settings → AI assistant. |
 | Assistant answers **“not enough evidence”** for something you imported | Check the document's *AI search* status is *Indexed*, widen the scope picker to “Whole library”, or rephrase with the paper's terminology. |
 | Cloud provider refused with **“Enable this explicitly in Settings”** | Tick the consent box under Settings → AI assistant (only after reading what is sent). |
+| Comparison / gap analysis is “Queued” for a long time | Analyses run one at a time in the background; each new paper takes about 3 minutes to profile on a CPU. Progress shows on the page. |
+| Analysis **failed: incomplete JSON** | The model hit its output limit. Retry, or use a stronger model (`OLLAMA_CHAT_MODEL`). |
+| Many fields **“Not reported”** for a long paper | Only the most relevant excerpts are read per pass; raise `ANALYSIS_EXCERPT_CHARS` (and `OLLAMA_NUM_CTX`) if you have the RAM. |
 | Model shows **not installed** | `ollama pull <model>` with the exact name shown, or change `OLLAMA_CHAT_MODEL` / `OLLAMA_EMBED_MODEL`. |
 | Upload fails with **“does not look like a valid PDF”** | The file's contents don't match its extension (e.g. a renamed file). Re-export it as a real PDF. |
 | **“The PDF is password-protected”** | Remove the password in your PDF reader (Print → Save as PDF) and import again. |

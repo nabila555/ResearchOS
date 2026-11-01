@@ -5,6 +5,7 @@ import math
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from typing import Any
 
 from app.ai.providers import ChatTurn, ProviderError, ProviderUnavailableError
 from app.ai.registry import AIServices
@@ -53,6 +54,19 @@ class FakeChat:
     reply: Callable[[str, list[ChatTurn]], str] = lambda _system, _turns: "Spindles help [1]."
     error: ProviderError | None = None
     calls: list[tuple[str, list[ChatTurn]]] = field(default_factory=list)
+    # generate_json: a function (system, prompt, schema) -> dict, and a call log.
+    json_reply: Callable[[str, str, dict[str, Any]], dict[str, Any]] | None = None
+    json_calls: list[tuple[str, str, dict[str, Any]]] = field(default_factory=list)
+
+    def generate_json(
+        self, system: str, prompt: str, schema: dict[str, Any], *, max_tokens: int
+    ) -> dict[str, Any]:
+        self.json_calls.append((system, prompt, schema))
+        if self.error is not None:
+            raise self.error
+        if self.json_reply is None:
+            raise ProviderError("No fake JSON reply configured.")
+        return self.json_reply(system, prompt, schema)
 
     def stream_chat(self, system: str, turns: list[ChatTurn], *, max_tokens: int) -> Iterator[str]:
         self.calls.append((system, turns))

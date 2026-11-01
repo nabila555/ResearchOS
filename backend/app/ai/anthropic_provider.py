@@ -1,6 +1,8 @@
 """Optional Claude chat provider (cloud). Only used with an API key AND user consent."""
 
+import json
 from collections.abc import Iterator
+from typing import Any
 
 import anthropic
 
@@ -50,3 +52,38 @@ class AnthropicChatProvider:
             raise ProviderError(f"Anthropic API error (HTTP {exc.status_code}).") from exc
         except anthropic.APIConnectionError as exc:
             raise ProviderUnavailableError("Could not reach the Anthropic API.") from exc
+
+    def generate_json(
+        self, system: str, prompt: str, schema: dict[str, Any], *, max_tokens: int
+    ) -> dict[str, Any]:
+        try:
+            with self._client.beta.messages.stream(
+                model=self.model,
+                max_tokens=max(max_tokens, 16000),
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+                output_config={
+                    "effort": "medium",
+                    "format": {"type": "json_schema", "schema": schema},
+                },
+                betas=[FALLBACK_BETA],
+                fallbacks="default",
+            ) as stream:
+                final = stream.get_final_message()
+        except anthropic.AuthenticationError as exc:
+            raise ProviderError("The Anthropic API key was rejected.") from exc
+        except anthropic.RateLimitError as exc:
+            raise ProviderUnavailableError("Anthropic rate limit reached.") from exc
+        except anthropic.APIStatusError as exc:
+            raise ProviderError(f"Anthropic API error (HTTP {exc.status_code}).") from exc
+        except anthropic.APIConnectionError as exc:
+            raise ProviderUnavailableError("Could not reach the Anthropic API.") from exc
+        if final.stop_reason == "refusal":
+            raise RefusalError("Claude declined this analysis.")
+        if final.stop_reason == "max_tokens":
+            raise ProviderError("Claude's output was cut off (max_tokens).")
+        text = next((b.text for b in final.content if b.type == "text"), "")
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ProviderError("Claude returned invalid JSON.") from exc

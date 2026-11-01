@@ -8,7 +8,7 @@ question the user asked, and only after they consented in Settings.
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class ProviderError(Exception):
@@ -39,6 +39,12 @@ class ChatProvider(Protocol):
 
     def stream_chat(self, system: str, turns: list[ChatTurn], *, max_tokens: int) -> Iterator[str]:
         """Yield text fragments of the reply. Raises ProviderError subclasses."""
+        ...
+
+    def generate_json(
+        self, system: str, prompt: str, schema: dict[str, Any], *, max_tokens: int
+    ) -> dict[str, Any]:
+        """Return an object that matches ``schema`` (constrained decoding where supported)."""
         ...
 
 

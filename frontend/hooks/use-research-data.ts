@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  analysisService,
   assistantService,
   collectionService,
   dashboardService,
@@ -11,7 +12,7 @@ import {
   projectService,
   systemService,
 } from "@/services/researchos";
-import type { DocumentFilters, ProjectInput, ProjectStatus } from "@/types/api";
+import type { AnalysisKind, DocumentFilters, ProjectInput, ProjectStatus } from "@/types/api";
 
 export const queryKeys = {
   dashboard: ["dashboard"] as const,
@@ -143,5 +144,41 @@ export function useChatSession(id: number | null) {
     queryKey: assistantKeys.session(id ?? 0),
     queryFn: () => assistantService.session(id as number),
     enabled: id !== null,
+  });
+}
+
+// --- Research intelligence --------------------------------------------------------
+
+export const analysisKeys = {
+  list: (params: object) => ["analyses", params] as const,
+  one: (id: number) => ["analysis", id] as const,
+  profile: (documentId: number) => ["paper-profile", documentId] as const,
+};
+
+const ACTIVE = new Set(["pending", "running"]);
+
+/** Polls every 2 s while the analysis is queued or running. */
+export function useAnalysis(id: number | null) {
+  return useQuery({
+    queryKey: analysisKeys.one(id ?? 0),
+    queryFn: () => analysisService.get(id as number),
+    enabled: id !== null,
+    refetchInterval: (query) => (query.state.data && ACTIVE.has(query.state.data.status) ? 2000 : false),
+  });
+}
+
+export function useAnalyses(params: { kind?: AnalysisKind; document_id?: number }) {
+  return useQuery({
+    queryKey: analysisKeys.list(params),
+    queryFn: () => analysisService.list(params),
+    refetchInterval: (query) => (query.state.data?.some((a) => ACTIVE.has(a.status)) ? 3000 : false),
+  });
+}
+
+export function usePaperProfile(documentId: number) {
+  return useQuery({
+    queryKey: analysisKeys.profile(documentId),
+    queryFn: () => analysisService.profile(documentId),
+    retry: false,
   });
 }

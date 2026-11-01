@@ -322,3 +322,107 @@ export interface AssistantStatus {
     waiting_for_provider: boolean;
   };
 }
+
+// --- Research intelligence --------------------------------------------------------
+
+export type AnalysisKind = "profile" | "comparison" | "gap_analysis" | "detective";
+export type AnalysisStatus = "pending" | "running" | "done" | "failed" | "cancelled";
+
+export interface Evidence {
+  chunk_id: number | null;
+  page_start: number | null;
+  page_end: number | null;
+  section: string | null;
+  quote: string;
+  verified: boolean;
+  reason: string | null;
+}
+
+export interface ProfileStatement {
+  text: string;
+  evidence: Evidence;
+}
+
+export type FieldStatus = "verified" | "partial" | "unverified" | "not_reported";
+
+export interface ProfileFieldValue {
+  status: FieldStatus;
+  statements: ProfileStatement[];
+}
+
+export interface PaperProfile {
+  document_id: number;
+  provider: string;
+  model: string;
+  stale: boolean;
+  passages_used: number;
+  fields: (ProfileFieldValue & { key: string; label: string })[];
+  updated_at: string;
+}
+
+export interface ComparisonResult {
+  documents: { id: number; title: string; year: number | null; authors: string[] }[];
+  fields: { key: string; label: string }[];
+  profiles: Record<string, Record<string, ProfileFieldValue>>;
+}
+
+export interface GapItem {
+  statement: string;
+  basis: "literature" | "hypothesis";
+  rationale: string;
+  papers: { label: string; document_id: number; title: string }[];
+  notes: string[];
+}
+
+export interface GapResult {
+  focus: string | null;
+  papers: { label: string; document_id: number; title: string; year: number | null }[];
+  categories: { key: string; label: string; items: GapItem[] }[];
+}
+
+export interface DetectiveObservation {
+  category: string;
+  severity: "low" | "medium" | "high";
+  observation: string;
+  kind: "quoted" | "absence";
+  evidence: Evidence | null;
+}
+
+export interface DetectiveResult {
+  document: { id: number; title: string };
+  observations: DetectiveObservation[];
+  checklist: {
+    key: string;
+    label: string;
+    status: "reported" | "not_found" | "unclear" | "unverified";
+    evidence: Evidence | null;
+  }[];
+  excerpts_analyzed: number;
+  excerpt_pages?: number[];
+}
+
+export interface Analysis {
+  id: number;
+  kind: AnalysisKind;
+  status: AnalysisStatus;
+  title: string;
+  document_ids: number[];
+  params: { focus?: string; label?: string };
+  progress: number;
+  progress_message: string | null;
+  error: string | null;
+  provider: string;
+  model: string;
+  report_id: number | null;
+  created_at: string;
+  updated_at: string;
+  result?: unknown;
+}
+
+export interface AnalysisCreate {
+  kind: AnalysisKind;
+  document_ids?: number[];
+  collection_id?: number;
+  project_id?: number;
+  focus?: string;
+}

@@ -1,5 +1,8 @@
 import { API_BASE_URL, apiFetch, apiStreamNdjson, apiUpload, toQueryString } from "@/lib/api";
 import type {
+  Analysis,
+  AnalysisCreate,
+  AnalysisKind,
   AskEvent,
   AssistantStatus,
   AttachmentOptions,
@@ -14,6 +17,7 @@ import type {
   DocumentPage,
   DocumentUpdate,
   LibraryFacets,
+  PaperProfile,
   Project,
   ProjectInput,
   ProjectStatus,
@@ -120,4 +124,16 @@ export const assistantService = {
       onEvent,
       signal,
     ),
+};
+
+export const analysisService = {
+  create: (input: AnalysisCreate) => apiFetch<Analysis>("/api/analyses", json("POST", input)),
+  list: (params: { kind?: AnalysisKind; document_id?: number; limit?: number }) =>
+    apiFetch<Analysis[]>(`/api/analyses${toQueryString(params)}`),
+  get: (id: number) => apiFetch<Analysis>(`/api/analyses/${id}`),
+  cancel: (id: number) => apiFetch<Analysis>(`/api/analyses/${id}/cancel`, { method: "POST" }),
+  rerun: (id: number) => apiFetch<Analysis>(`/api/analyses/${id}/rerun`, { method: "POST" }),
+  remove: (id: number) => apiFetch<void>(`/api/analyses/${id}`, { method: "DELETE" }),
+  profile: (documentId: number) => apiFetch<PaperProfile>(`/api/documents/${documentId}/profile`),
+  reportDownloadUrl: (reportId: number) => `${API_BASE_URL}/api/reports/${reportId}/download`,
 };

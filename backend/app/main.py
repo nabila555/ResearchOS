@@ -27,6 +27,7 @@ from app.document_processing.types import (
 )
 from app.document_processing.web import FetchError, UnsafeUrlError
 from app.services import indexing_service
+from app.services.analysis_service import AnalysisWorker
 from app.services.errors import ServiceError
 from app.services.indexing_service import IndexWorker
 
@@ -67,6 +68,7 @@ def create_app(settings: Settings | None = None, ai: AIServices | None = None) -
         app.state.ai = ai or build_ai_services(settings)
         app.state.vector_index = VectorIndex()
         app.state.index_worker = None
+        app.state.analysis_worker = None
         if settings.run_background_worker:
             with app.state.session_factory() as db:
                 # Documents imported before the AI index existed are queued once.
@@ -75,12 +77,17 @@ def create_app(settings: Settings | None = None, ai: AIServices | None = None) -
             worker = IndexWorker(app.state.session_factory, app.state.ai, settings.embed_batch_size)
             worker.start()
             app.state.index_worker = worker
+            analysis_worker = AnalysisWorker(app.state.session_factory, app.state.ai, settings)
+            analysis_worker.start()
+            app.state.analysis_worker = analysis_worker
         logger.info("ResearchOS %s started (data dir: %s)", __version__, settings.data_dir)
         try:
             yield
         finally:
-            if app.state.index_worker is not None:
-                app.state.index_worker.stop()
+            for worker_name in ("index_worker", "analysis_worker"):
+                running = getattr(app.state, worker_name, None)
+                if running is not None:
+                    running.stop()
             engine.dispose()
 
     app = FastAPI(
